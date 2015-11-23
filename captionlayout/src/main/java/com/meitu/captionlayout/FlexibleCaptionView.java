@@ -3,6 +3,7 @@ package com.meitu.captionlayout;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -11,7 +12,6 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.text.TextPaint;
@@ -34,8 +34,7 @@ public class FlexibleCaptionView extends View {
     private Paint borderPaint; // 画矩形的笔
     private Region borderRegion = new Region();
     private Path borderPath = new Path();
-    private int borderWidth = 200;
-    private int borderHeight = 100;
+    private int borderColor = Color.GRAY;
 
     private PointF centerPoint = new PointF(); // 矩形中心坐标
 
@@ -50,15 +49,17 @@ public class FlexibleCaptionView extends View {
     private RectF currentRightBottomRect = new RectF();
 
     private Paint bitmapPaint;
-    private Bitmap tempBitmap;
+    private Bitmap leftTopBmp, rightTopBmp, rightBottomBmp;
     private int iconSize;
 
     private TextPaint textPaint; // 写字幕的笔
-    private String text;
+    private String text = "";
     private float textStrokeWidth = 1;
-    private float textSize;
-    private float textDegress;
-    private int textPadding = 20; // 单位px
+    private float textSize = 50f;
+    private int textPadding = 10;
+    private ArrayList<OneLineText> multiLines = new ArrayList<>();
+    private int oneLineHeight;
+    private int baselineHeight;
 
     private TouchRegion touchRegion; // 触摸的区域
     private boolean focus = true;
@@ -73,31 +74,45 @@ public class FlexibleCaptionView extends View {
 
     public FlexibleCaptionView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        // TODO: 2015/11/20 获取自定义属性
-        if (attrs != null) {
 
-        }
-
-        init();
-    }
-
-    private void init() {
-        initPaint();
-
+        // 设置默认属性值
         iconSize =
-                (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50f, getResources().getDisplayMetrics());
+            (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 30f, getResources().getDisplayMetrics());
 
-        // TODO: 2015/11/20 图标和文字通过外部传入
-        tempBitmap = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_delete);
-        text = "测试文字,eD，jP";
-        textSize = 40;
+        // TODO: 2015/11/20 获取自定义属性
+        TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.FlexibleCaptionView);
+        int count = typedArray.getIndexCount();
+        for (int i = 0; i < count; i++) {
+            int attr = typedArray.getIndex(i);
+            if (attr == R.styleable.FlexibleCaptionView_text) {
+                text = typedArray.getString(attr);
+            } else if (attr == R.styleable.FlexibleCaptionView_textSize) {
+                textSize = typedArray.getDimensionPixelSize(attr, (int) textSize);
+            } else if (attr == R.styleable.FlexibleCaptionView_textPadding) {
+                textPadding = typedArray.getDimensionPixelOffset(attr, textPadding);
+            } else if (attr == R.styleable.FlexibleCaptionView_borderColor) {
+                borderColor = typedArray.getColor(attr, borderColor);
+            } else if (attr == R.styleable.FlexibleCaptionView_leftTopIcon) {
+                leftTopBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
+            } else if (attr == R.styleable.FlexibleCaptionView_rightTopIcon) {
+                rightTopBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
+            } else if (attr == R.styleable.FlexibleCaptionView_rightBottomIcon) {
+                rightBottomBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
+            } else if (attr == R.styleable.FlexibleCaptionView_iconSize) {
+                iconSize = typedArray.getDimensionPixelSize(attr, iconSize);
+            }
+        }
+        typedArray.recycle();
+
+        initPaint();
     }
 
     private void initPaint() {
         // 边框画笔
         borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         borderPaint.setStyle(Paint.Style.STROKE);
-        borderPaint.setColor(Color.GRAY);
+        borderPaint.setStrokeWidth(1);
+        borderPaint.setColor(borderColor);
 
         // 图标画笔
         bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -110,19 +125,43 @@ public class FlexibleCaptionView extends View {
         textPaint.setTextSize(textSize);
     }
 
+    // TODO: 2015/11/23 通过代码增加控件，属性需要动态设置
+    public void setText(String text) {
+
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        log("onMeasure");
         // TODO: 2015/11/20 是否需要支持wrap_content
     }
+
+    private boolean isLayout;
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         log("onLayout");
         super.onLayout(changed, left, top, right, bottom);
-        initBorderRect();
-        updateBorderVertexData();
-        updateCornerLocationData();
+        if (!isLayout) {
+            isLayout = true;
+            initBorderRect();
+            updateBorderVertexData();
+            determineTextInitBaselineLocation(baselineHeight, oneLineHeight);
+            updateCornerLocationData();
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        log("onAttachedToWindow()");
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        log("onDetachedFromWindow()");
     }
 
     // 更新各位置信息
@@ -139,7 +178,7 @@ public class FlexibleCaptionView extends View {
         drawText(canvas);
         if (focus) {
             drawBorderRect(canvas);
-            drawCornerIcon(canvas, tempBitmap, tempBitmap, tempBitmap);
+            drawCornerIcon(canvas, leftTopBmp, rightTopBmp, rightBottomBmp);
         }
     }
 
@@ -154,110 +193,87 @@ public class FlexibleCaptionView extends View {
     }
 
     private void drawText(Canvas canvas) {
-        // TODO: 2015/11/20 写字
-        canvas.save();
         Path textPath = new Path();
-        textPath.moveTo(leftBottomPoint.x, leftBottomPoint.y);
-        textPath.lineTo(rightBottomPoint.x, rightBottomPoint.y);
-        canvas.drawTextOnPath(text, textPath, 20, 20, textPaint);
-        canvas.restore();
-        testDrawText(canvas);
-    }
-
-    private void testDrawText(Canvas canvas) {
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        paint.setStrokeWidth(textStrokeWidth);
-        paint.setTextSize(40);
-        Paint.FontMetricsInt fmi = paint.getFontMetricsInt();
-        String testString = "测试：ijkJQKA:1234";
-        Rect bounds1 = new Rect();
-        paint.getTextBounds("测", 0, 1, bounds1);
-        log(bounds1.toShortString());
-        Rect bounds2 = new Rect();
-        paint.getTextBounds("测试：ijk", 0, 6, bounds2);
-        log(bounds2.toShortString());
-        // 随意设一个位置作为baseline
-        int x = 0;
-        int y = 100;
-        // 把testString画在baseline上
-        canvas.drawText(testString, x, y, paint);
-        // bounds1
-        paint.setStyle(Paint.Style.STROKE); // 画空心矩形
-        canvas.save();
-        canvas.translate(x, y); // 注意这里有translate。getTextBounds得到的矩形也是以baseline为基准的
-        paint.setColor(Color.GREEN);
-        canvas.drawRect(bounds1, paint);
-        canvas.restore();
-        // bounds2
-        canvas.save();
-        paint.setColor(Color.MAGENTA);
-        canvas.translate(x, y);
-        canvas.drawRect(bounds2, paint);
-        canvas.restore();
-        // baseline
-        paint.setColor(Color.RED);
-        canvas.drawLine(x, y, 1024, y, paint);
-        // ascent
-        paint.setColor(Color.YELLOW);
-        canvas.drawLine(x, y + fmi.ascent, 1024, y + fmi.ascent, paint);
-        // descent
-        paint.setColor(Color.BLUE);
-        canvas.drawLine(x, y + fmi.descent, 1024, y + fmi.descent, paint);
-        // top
-        paint.setColor(Color.DKGRAY);
-        canvas.drawLine(x, y + fmi.top, 1024, y + fmi.top, paint);
-        // bottom
-        paint.setColor(Color.GREEN);
-        canvas.drawLine(x, y + fmi.bottom, 1024, y + fmi.bottom, paint);
+        for (OneLineText oneLineText : multiLines) {
+            textPath.moveTo(oneLineText.drawBaselineStartPoint.x, oneLineText.drawBaselineStartPoint.y);
+            textPath.lineTo(oneLineText.drawBaselineEndPoint.x, oneLineText.drawBaselineEndPoint.y);
+            canvas.drawTextOnPath(oneLineText.text, textPath, 0, 0, textPaint);
+            textPath.reset();
+        }
     }
 
     private void drawCornerIcon(Canvas canvas, Bitmap leftTopBitmap, Bitmap rightTopBitmap, Bitmap rightBottomBitmap) {
-        canvas.drawBitmap(leftTopBitmap, null, currentLeftTopIconRect, bitmapPaint);
-        canvas.drawBitmap(rightTopBitmap, null, currentRightTopIconRect, bitmapPaint);
-        canvas.drawBitmap(rightBottomBitmap, null, currentRightBottomRect, bitmapPaint);
+        if (leftTopBitmap != null) {
+            canvas.drawBitmap(leftTopBitmap, null, currentLeftTopIconRect, bitmapPaint);
+        }
+        if (rightTopBitmap != null) {
+            canvas.drawBitmap(rightTopBitmap, null, currentRightTopIconRect, bitmapPaint);
+        }
+        if (rightBottomBitmap != null) {
+            canvas.drawBitmap(rightBottomBitmap, null, currentRightBottomRect, bitmapPaint);
+        }
     }
 
     private void initBorderRect() {
         determineBorderSize();
-        int width = getWidth();
-        int height = getHeight();
-        float rectLeft = (width - borderWidth) / 2;
+    }
+
+    private void determineBorderSize() {
+        multiLines.clear();
+
+        Paint.FontMetricsInt fmi = textPaint.getFontMetricsInt(); // 获取字体信息
+        oneLineHeight = fmi.bottom - fmi.top;
+        baselineHeight = -fmi.top;
+
+        float availableWidthSpace = getWidth() - textPadding * 2; // 每行允许写文字最大空间
+        float[] textWidths = new float[text.length()];
+        textPaint.getTextWidths(text, 0, text.length(), textWidths);
+        float totalWidths = 0;
+        int lineStartIndex = 0;
+        OneLineText firstLine = new OneLineText();
+        multiLines.add(firstLine);
+        for (int i = 0; i < textWidths.length; i++) {
+            totalWidths += textWidths[i];
+            if (totalWidths > availableWidthSpace) {
+                // 文字超过一行，记录下该行信息
+                multiLines.get(multiLines.size() - 1).text = text.substring(lineStartIndex, i);
+                // 开启下一行
+                OneLineText nextLine = new OneLineText();
+                multiLines.add(nextLine);
+
+                // 换行
+                lineStartIndex = i;
+                totalWidths = textWidths[i];
+            }
+        }
+        multiLines.get(multiLines.size() - 1).text = text.substring(lineStartIndex, textWidths.length);
+
+        int lineCount = multiLines.size();
+        // 根据行数来确定矩形框宽高
+        float borderWidth = lineCount > 1 ? getWidth() - 2 : (totalWidths + textPadding * 2);
+        float borderHeight = oneLineHeight * lineCount + textPadding * 2;
+        log("borderWidth:" + borderWidth + ",borderHeight=" + borderHeight);
+
+        float rectLeft = (getWidth() - borderWidth) / 2;
         float rectRight = rectLeft + borderWidth;
-        float rectTop = (height - borderHeight) / 2;
+        float rectTop = (getHeight() - borderHeight) / 2;
         float rectBottom = rectTop + borderHeight;
         borderRect.set(rectLeft, rectTop, rectRight, rectBottom);
     }
 
-    private void determineBorderSize() {
-        // TODO: 2015/11/20 根据文字的个数和大小来确定宽高
-
-        Paint.FontMetricsInt fmi = textPaint.getFontMetricsInt();
-    }
-
-    ArrayList<OneLineText> multiLines = new ArrayList<>();
-
-    private void cutToMultiLinesIfNeed() {
-        multiLines.clear();
-        int availableWidthSpace = getWidth() - textPadding * 2;
-        float[] textWidths = new float[text.length()];
-        textPaint.getTextWidths(text, 0, text.length(), textWidths);
-        float totalWidths = 0;
-        for (int i = 0; i <= textWidths.length; i++) {
-            totalWidths += textWidths[i];
-            if (totalWidths > availableWidthSpace) {
-                // 文字超过一行，记录下该行信息，换行
-                OneLineText oneLine = new OneLineText();
-                oneLine.text = text.substring(0, i);
-                multiLines.add(oneLine);
-                i--;
-                totalWidths = 0;
-            }
+    // 确定文字初始化时baseline的位置
+    private void determineTextInitBaselineLocation(int baselineHeight, int lineHeight) {
+        OneLineText firstLine = multiLines.get(0);
+        firstLine.setBaselineStartPoint(leftTopPoint.x + textPadding, leftTopPoint.y + textPadding + baselineHeight);
+        firstLine.setBaselineEndPoint(rightTopPoint.x - textPadding, rightTopPoint.y + textPadding + baselineHeight);
+        for (int i = 1; i < multiLines.size(); i++) {
+            OneLineText curLineText = multiLines.get(i);
+            OneLineText lastLineText = multiLines.get(i - 1);
+            curLineText.setBaselineStartPoint(lastLineText.baselineStartPoint.x, lastLineText.baselineStartPoint.y
+                + lineHeight);
+            curLineText.setBaselineEndPoint(lastLineText.baselineEndPoint.x, lastLineText.baselineEndPoint.y
+                + lineHeight);
         }
-    }
-
-    private class OneLineText {
-        public String text;
-        public Path textPath = new Path();
     }
 
     private void updateLeftTopIconRect() {
@@ -293,19 +309,22 @@ public class FlexibleCaptionView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         float curX = event.getX();
         float curY = event.getY();
+        boolean consume = false;
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                determineTouchRegion(curX, curY);
+                consume = determineTouchRegion(curX, curY);
                 break;
             case MotionEvent.ACTION_MOVE:
                 onMove(curX, curY);
+                consume = true;
                 break;
             case MotionEvent.ACTION_UP:
+                consume = true;
                 break;
         }
         lastX = curX;
         lastY = curY;
-        return true;
+        return consume;
     }
 
     private void onMove(float curX, float curY) {
@@ -335,16 +354,14 @@ public class FlexibleCaptionView extends View {
     // 计算旋转角度
     private float calculateRotationDegree(float curX, float curY) {
         // 根据斜率算夹角
-        float degree =
-                (float) Math.toDegrees(Math.atan2(curY - centerPoint.y, curX - centerPoint.x))
-                        - (float) Math.toDegrees(Math.atan2(lastY - centerPoint.y, lastX - centerPoint.x));
-        log("degree=" + degree);
-        return degree;
+        return (float) Math.toDegrees(Math.atan2(curY - centerPoint.y, curX - centerPoint.x))
+            - (float) Math.toDegrees(Math.atan2(lastY - centerPoint.y, lastX - centerPoint.x));
     }
 
     private float calculateScale(float curX, float curY) {
         double oldRadius = calculateRadius(lastX, lastY);
         double newRadius = calculateRadius(curX, curY);
+
         float scale = 1;
         if (oldRadius != 0 && newRadius != 0) {
             scale = (float) (newRadius / oldRadius);
@@ -359,23 +376,26 @@ public class FlexibleCaptionView extends View {
     }
 
     // 确定事件点击的区域
-    private void determineTouchRegion(float curX, float curY) {
+    private boolean determineTouchRegion(float curX, float curY) {
         log("curX=" + curX + ",curY=" + curY);
         setFocus(true);
-        if (currentLeftTopIconRect.contains(curX, curY)) {
-            touchRegion = TouchRegion.LEFT_TOP_ICON;
-        } else if (currentRightTopIconRect.contains(curX, curY)) {
-            touchRegion = TouchRegion.RIGHT_TOP_ICON;
-        } else if (currentRightBottomRect.contains(curX, curY)) {
+        boolean consume = true;
+        if (rightBottomBmp != null && currentRightBottomRect.contains(curX, curY)) {
             touchRegion = TouchRegion.RIGHT_BOTTOM_ICON;
+        } else if (leftTopBmp != null && currentLeftTopIconRect.contains(curX, curY)) {
+            touchRegion = TouchRegion.LEFT_TOP_ICON;
+        } else if (rightTopBmp != null && currentRightTopIconRect.contains(curX, curY)) {
+            touchRegion = TouchRegion.RIGHT_TOP_ICON;
         } else if (isInBorderRegion(curX, curY)) {
             // 内容与角落重叠区域相应角落事件
             touchRegion = TouchRegion.INSIDE;
         } else {
             touchRegion = TouchRegion.OUTSIDE;
             setFocus(false);
+            consume = false;
         }
-        log("touchRegion=" + touchRegion.name());
+        log(this + ",touchRegion=" + touchRegion.name());
+        return consume;
     }
 
     private void setFocus(boolean checked) {
@@ -388,14 +408,11 @@ public class FlexibleCaptionView extends View {
 
     // 判断触摸点是否在边框区域内
     private boolean isInBorderRegion(float curX, float curY) {
-        // 构造一个区域对象，左闭右开的。
         RectF r = new RectF();
         // 计算控制点的边界
         borderPath.computeBounds(r, true);
-        log("borderPath.computeBounds,RectF" + r.toShortString());
         // 设置区域路径和剪辑描述的区域
         borderRegion.setPath(borderPath, new Region((int) r.left, (int) r.top, (int) r.right, (int) r.bottom));
-        // 判断触摸点是否在封闭的path内 在返回true 不在返回false
         return borderRegion.contains((int) curX, (int) curY);
     }
 
@@ -404,18 +421,25 @@ public class FlexibleCaptionView extends View {
         updateLocationDataAndRefresh();
     }
 
+    float scale = 1;
+
     private void processScale(float scale) {
+        // 检查放大是否超过边界
+        float maxScale = getWidth() * 1.0f / borderRect.width();
+        float minScale = iconSize * 2 / borderRect.width();
+        if (this.scale * scale > maxScale) {
+            scale = maxScale / this.scale;
+        } else if (this.scale * scale < minScale) {
+            scale = minScale / this.scale;
+        }
+        this.scale *= scale;
         updateMatrix.postScale(scale, scale, centerPoint.x, centerPoint.y);
         updateTextPaint(scale);
         updateLocationDataAndRefresh();
     }
 
     private void processRotate(float degree) {
-        log("processRotate before:" + updateMatrix.toShortString());
         updateMatrix.postRotate(degree, centerPoint.x, centerPoint.y);
-        log("processRotate after:" + updateMatrix.toShortString());
-        // 字体角度
-        textDegress += degree;
         updateLocationDataAndRefresh();
     }
 
@@ -431,6 +455,7 @@ public class FlexibleCaptionView extends View {
     // 更新位置信息
     private void updateLocationDataAndRefresh() {
         updateBorderVertexData();
+        updateTextBaselineLocationData();
         updateCornerLocationData();
 
         invalidate();
@@ -440,8 +465,8 @@ public class FlexibleCaptionView extends View {
     private void updateBorderVertexData() {
         // 根据矩阵变化，映射到新的顶点位置
         float[] dst = new float[8];
-        updateMatrix.mapPoints(dst, new float[]{borderRect.left, borderRect.top, borderRect.right, borderRect.top,
-                borderRect.left, borderRect.bottom, borderRect.right, borderRect.bottom});
+        updateMatrix.mapPoints(dst, new float[] {borderRect.left, borderRect.top, borderRect.right, borderRect.top,
+            borderRect.left, borderRect.bottom, borderRect.right, borderRect.bottom});
         leftTopPoint.x = dst[0];
         leftTopPoint.y = dst[1];
         rightTopPoint.x = dst[2];
@@ -458,11 +483,54 @@ public class FlexibleCaptionView extends View {
         // 根据对角的点获取中心点
         centerPoint.x = (leftTopPoint.x + rightBottomPoint.x) / 2;
         centerPoint.y = (leftTopPoint.y + rightBottomPoint.y) / 2;
-        log("centerPoint=" + centerPoint.toString());
+    }
+
+    private void updateTextBaselineLocationData() {
+        // 根据矩阵变化，映射到新的baseline位置
+        for (OneLineText oneLineText : multiLines) {
+            float[] dst = new float[4];
+            updateMatrix.mapPoints(dst, new float[] {oneLineText.baselineStartPoint.x,
+                oneLineText.baselineStartPoint.y, oneLineText.baselineEndPoint.x, oneLineText.baselineEndPoint.y});
+            oneLineText.setDrawBaselineStartPoint(dst[0], dst[1]);
+            oneLineText.setDrawBaselineEndPoint(dst[2], dst[3]);
+        }
     }
 
     private void log(String text) {
         Log.d(TAG, text);
+    }
+
+    /**
+     * 一行文字所包含的信息
+     * */
+    private class OneLineText {
+        public String text;
+        public PointF baselineStartPoint = new PointF();
+        public PointF baselineEndPoint = new PointF();
+        public PointF drawBaselineStartPoint = new PointF();
+        public PointF drawBaselineEndPoint = new PointF();
+
+        public void setBaselineStartPoint(float x, float y) {
+            this.baselineStartPoint.x = x;
+            this.baselineStartPoint.y = y;
+            this.drawBaselineStartPoint.set(baselineStartPoint);
+        }
+
+        public void setBaselineEndPoint(float x, float y) {
+            this.baselineEndPoint.x = x;
+            this.baselineEndPoint.y = y;
+            this.drawBaselineEndPoint.set(baselineEndPoint);
+        }
+
+        public void setDrawBaselineStartPoint(float x, float y) {
+            this.drawBaselineStartPoint.x = x;
+            this.drawBaselineStartPoint.y = y;
+        }
+
+        public void setDrawBaselineEndPoint(float x, float y) {
+            this.drawBaselineEndPoint.x = x;
+            this.drawBaselineEndPoint.y = y;
+        }
     }
 
     /**

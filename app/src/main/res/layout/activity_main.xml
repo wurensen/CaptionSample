@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -13,11 +14,27 @@
         android:id="@+id/captionlayout_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#0ff">
+        android:background="#e4efef">
 
         <com.meitu.captionlayout.FlexibleCaptionView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            app:text="第一个"
+            app:textPadding="10dp"
+            app:textSize="30dp"
+            app:rightTopIcon="@android:drawable/checkbox_on_background"
+            app:leftTopIcon="@android:drawable/ic_delete"
+            app:rightBottomIcon="@android:drawable/ic_menu_crop"/>
+
+        <com.meitu.captionlayout.FlexibleCaptionView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:text="第二个，文字chang，需要换行，还不够长，测试一下多行文字的时候"
+            app:textPadding="20dp"
+            app:textSize="40dp"
+            app:rightTopIcon="@android:drawable/checkbox_on_background"
+            app:leftTopIcon="@android:drawable/ic_delete"
+            app:rightBottomIcon="@android:drawable/ic_menu_crop"/>
 
     </FrameLayout>
 </RelativeLayout>

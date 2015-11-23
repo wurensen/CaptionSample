@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--字幕控件自定义属性-->
+    <declare-styleable name="FlexibleCaptionView">
+        <!--字幕内容-->
+        <attr name="text" format="string"/>
+        <!--字幕大小-->
+        <attr name="textSize" format="dimension"/>
+        <!--字幕与边框间距-->
+        <attr name="textPadding" format="dimension"/>
+        <!--字幕边框颜色-->
+        <attr name="borderColor" format="color"/>
+        <!--左上角功能图标-->
+        <attr name="leftTopIcon" format="reference"/>
+        <!--右上角功能图标-->
+        <attr name="rightTopIcon" format="reference"/>
+        <!--右下角功能图标-->
+        <attr name="rightBottomIcon" format="reference"/>
+        <!--功能图标大小-->
+        <attr name="iconSize" format="dimension"/>
+    </declare-styleable>
+</resources>
