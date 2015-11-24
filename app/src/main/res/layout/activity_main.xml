@@ -4,37 +4,56 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:paddingBottom="@dimen/activity_vertical_margin"
-                android:paddingLeft="@dimen/activity_horizontal_margin"
-                android:paddingRight="@dimen/activity_horizontal_margin"
-                android:paddingTop="@dimen/activity_vertical_margin"
                 tools:context=".MainActivity">
 
-    <FrameLayout
-        android:id="@+id/captionlayout_container"
+    <com.meitu.captionlayout.CaptionLayout
+        android:id="@+id/captionLayout_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#e4efef">
 
         <com.meitu.captionlayout.FlexibleCaptionView
+            android:id="@+id/captionView1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:text="第一个"
+            app:leftTopIcon="@android:drawable/ic_delete"
+            app:rightBottomIcon="@android:drawable/ic_menu_crop"
+            app:rightTopIcon="@android:drawable/checkbox_on_background"
+            app:text="第一个通过布局"
             app:textPadding="10dp"
-            app:textSize="30dp"
-            app:rightTopIcon="@android:drawable/checkbox_on_background"
-            app:leftTopIcon="@android:drawable/ic_delete"
-            app:rightBottomIcon="@android:drawable/ic_menu_crop"/>
+            app:textSize="30dp"/>
 
-        <com.meitu.captionlayout.FlexibleCaptionView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:text="第二个，文字chang，需要换行，还不够长，测试一下多行文字的时候"
-            app:textPadding="20dp"
-            app:textSize="40dp"
-            app:rightTopIcon="@android:drawable/checkbox_on_background"
-            app:leftTopIcon="@android:drawable/ic_delete"
-            app:rightBottomIcon="@android:drawable/ic_menu_crop"/>
+    </com.meitu.captionlayout.CaptionLayout>
 
-    </FrameLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/ediTxt"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="5dp"
+            android:onClick="add"
+            android:text="添加/修改"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="export"
+            android:text="导出当前字幕"/>
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imgView_show"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:background="#4444"
+        android:scaleType="fitStart"/>
 </RelativeLayout>

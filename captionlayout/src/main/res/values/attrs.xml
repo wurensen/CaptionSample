@@ -6,6 +6,8 @@
         <attr name="text" format="string"/>
         <!--字幕大小-->
         <attr name="textSize" format="dimension"/>
+        <!--字幕颜色-->
+        <attr name="textColor" format="color"/>
         <!--字幕与边框间距-->
         <attr name="textPadding" format="dimension"/>
         <!--字幕边框颜色-->
