@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
         captionView.setText("通过代码添加的字幕控件");
         captionView.setTextColor(Color.RED);
         captionView.setTextSizeDp(20);
-        captionView.setTextPaddingDp(35);
+        captionView.setTextPaddingDp(5);
         captionView.setBorderColor(Color.BLUE);
         captionView.setIconSizeDp(40);
         captionView.setLeftTopIcon(android.R.drawable.ic_delete);

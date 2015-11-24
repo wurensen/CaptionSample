@@ -67,8 +67,9 @@ public class FlexibleCaptionView extends View {
     private TouchRegion touchRegion; // 触摸的区域
     private boolean focus = true;
 
-
-    private boolean firstDraw = false;
+    private float totalScale;
+    private float totalDegree;
+    private boolean neverDraw = true;
     private boolean reInit = true; // 是否需要重新初始化
 
     public FlexibleCaptionView(Context context) {
@@ -86,7 +87,8 @@ public class FlexibleCaptionView extends View {
         iconSize = (int) convertDp2Px(30f);
 
         if (attrs != null) {
-            TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.FlexibleCaptionView);
+            TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable
+                    .FlexibleCaptionView);
             int count = typedArray.getIndexCount();
             for (int i = 0; i < count; i++) {
                 int attr = typedArray.getIndex(i);
@@ -101,11 +103,14 @@ public class FlexibleCaptionView extends View {
                 } else if (attr == R.styleable.FlexibleCaptionView_borderColor) {
                     borderColor = typedArray.getColor(attr, borderColor);
                 } else if (attr == R.styleable.FlexibleCaptionView_leftTopIcon) {
-                    leftTopBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
+                    leftTopBmp = BitmapFactory.decodeResource(getResources(), typedArray
+                            .getResourceId(attr, 0));
                 } else if (attr == R.styleable.FlexibleCaptionView_rightTopIcon) {
-                    rightTopBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
+                    rightTopBmp = BitmapFactory.decodeResource(getResources(), typedArray
+                            .getResourceId(attr, 0));
                 } else if (attr == R.styleable.FlexibleCaptionView_rightBottomIcon) {
-                    rightBottomBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
+                    rightBottomBmp = BitmapFactory.decodeResource(getResources(), typedArray
+                            .getResourceId(attr, 0));
                 } else if (attr == R.styleable.FlexibleCaptionView_iconSize) {
                     iconSize = typedArray.getDimensionPixelSize(attr, iconSize);
                 }
@@ -118,18 +123,20 @@ public class FlexibleCaptionView extends View {
     }
 
     private float convertDp2Px(float dp) {
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources().getDisplayMetrics());
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, getResources()
+                .getDisplayMetrics());
     }
 
     private float converSp2Px(float sp) {
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, getResources().getDisplayMetrics());
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, getResources()
+                .getDisplayMetrics());
     }
 
     private void initPaint() {
         // 边框画笔
         borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         borderPaint.setStyle(Paint.Style.STROKE);
-        borderPaint.setStrokeWidth(1);
+        borderPaint.setStrokeWidth(textStrokeWidth);
         borderPaint.setColor(borderColor);
 
         // 图标画笔
@@ -146,7 +153,7 @@ public class FlexibleCaptionView extends View {
     /**
      * 设置文本内容
      *
-     * @param text
+     * @param text 文本内容
      */
     public void setText(String text) {
         this.text = text;
@@ -260,29 +267,31 @@ public class FlexibleCaptionView extends View {
         refresh(false);
     }
 
+    /**
+     * @return 获取字幕信息
+     */
     public CaptionInfo getCurrentCaption() {
         return buildCurrentCaptionInfo();
     }
 
     private CaptionInfo buildCurrentCaptionInfo() {
-        Matrix matrix = new Matrix(updateMatrix);
-        float[] values = new float[9];
-        updateMatrix.getValues(values);
-
-        // 把字幕图片摆正
-        matrix.postRotate(-degree, centerPoint.x, centerPoint.y);
-        // 矩阵变化的坐标原点
-        matrix.postTranslate(-values[Matrix.MTRANS_X] - borderRect.left, -values[Matrix.MTRANS_Y] - borderRect.top);
-        ArrayList<OneLineText> copyMultiLines = new ArrayList<>(multiLines);
-        updateTextBaselineLocationData(copyMultiLines, matrix);
+        // 暂时摆正
+        updateMatrix.postRotate(-totalDegree, centerPoint.x, centerPoint.y);
         RectF dst = new RectF();
-        matrix.mapRect(dst, borderRect);
-        Rect rect = new Rect((int) dst.left, (int) dst.top, (int) dst.right, (int) dst.bottom);
-        Bitmap bitmap = Bitmap.createBitmap(rect.width(), rect.height(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        drawText(canvas, copyMultiLines);
-        CaptionInfo captionInfo = new CaptionInfo(bitmap, rect, degree);
-        log(captionInfo.toString());
+        updateMatrix.mapRect(dst, borderRect);
+        Rect locationRect = new Rect((int) dst.left, (int) dst.top, (int) dst.right, (int) dst
+                .bottom);
+        // 更新字幕位置
+        updateTextBaselineLocationData(multiLines, updateMatrix);
+        Bitmap textBitmap = Bitmap.createBitmap(locationRect.width(), locationRect.height(),
+                Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(textBitmap);
+        canvas.translate(-locationRect.left, -locationRect.top);
+        drawText(canvas, multiLines);
+        CaptionInfo captionInfo = new CaptionInfo(textBitmap, locationRect, totalDegree);
+        // 恢复位置
+        updateMatrix.postRotate(totalDegree, centerPoint.x, centerPoint.y);
+        updateTextBaselineLocationData(multiLines, updateMatrix);
         return captionInfo;
     }
 
@@ -331,22 +340,31 @@ public class FlexibleCaptionView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        log("onDraw..." + getWidth() + "," + getHeight());
-        if (!firstDraw || reInit) {
-            firstDraw = true;
+        log("onDraw");
+        if (neverDraw || reInit) {
+            neverDraw = false;
             reInit = false;
-            // TODO: 2015/11/24  修改文字内容或者字体大小
-            updateMatrix.reset();
-            initBorderRect();
-            updateBorderVertexData();
-            determineTextInitBaselineLocation(baselineHeight, oneLineHeight);
-            updateCornerLocationData();
+            init();
         }
         drawText(canvas, multiLines);
         if (focus) {
             drawBorderRect(canvas);
             drawCornerIcon(canvas, leftTopBmp, rightTopBmp, rightBottomBmp);
         }
+    }
+
+    private void init() {
+        updateMatrix.reset();
+        textPaint.setTextSize(textSize);
+        textPaint.setColor(textColor);
+        textPaint.setStrokeWidth(textStrokeWidth);
+        totalScale = 1;
+        totalDegree = 0;
+
+        initBorderRect();
+        updateBorderVertexData();
+        determineTextInitBaselineLocation(baselineHeight, oneLineHeight);
+        updateCornerLocationData();
     }
 
     private void drawBorderRect(Canvas canvas) {
@@ -362,14 +380,16 @@ public class FlexibleCaptionView extends View {
     private void drawText(Canvas canvas, ArrayList<OneLineText> multiLines) {
         Path textPath = new Path();
         for (OneLineText oneLineText : multiLines) {
-            textPath.moveTo(oneLineText.drawBaselineStartPoint.x, oneLineText.drawBaselineStartPoint.y);
+            textPath.moveTo(oneLineText.drawBaselineStartPoint.x, oneLineText
+                    .drawBaselineStartPoint.y);
             textPath.lineTo(oneLineText.drawBaselineEndPoint.x, oneLineText.drawBaselineEndPoint.y);
             canvas.drawTextOnPath(oneLineText.text, textPath, 0, 0, textPaint);
             textPath.reset();
         }
     }
 
-    private void drawCornerIcon(Canvas canvas, Bitmap leftTopBitmap, Bitmap rightTopBitmap, Bitmap rightBottomBitmap) {
+    private void drawCornerIcon(Canvas canvas, Bitmap leftTopBitmap, Bitmap rightTopBitmap,
+                                Bitmap rightBottomBitmap) {
         if (leftTopBitmap != null) {
             canvas.drawBitmap(leftTopBitmap, null, currentLeftTopIconRect, bitmapPaint);
         }
@@ -412,7 +432,8 @@ public class FlexibleCaptionView extends View {
                 totalWidths = textWidths[i];
             }
         }
-        multiLines.get(multiLines.size() - 1).text = text.substring(lineStartIndex, textWidths.length);
+        multiLines.get(multiLines.size() - 1).text = text.substring(lineStartIndex, textWidths
+                .length);
 
         int lineCount = multiLines.size();
         // 根据行数来确定矩形框宽高
@@ -430,15 +451,19 @@ public class FlexibleCaptionView extends View {
     // 确定文字初始化时baseline的位置
     private void determineTextInitBaselineLocation(int baselineHeight, int lineHeight) {
         OneLineText firstLine = multiLines.get(0);
-        firstLine.setBaselineStartPoint(leftTopPoint.x + textPadding, leftTopPoint.y + textPadding + baselineHeight);
-        firstLine.setBaselineEndPoint(rightTopPoint.x - textPadding, rightTopPoint.y + textPadding + baselineHeight);
+        firstLine.setBaselineStartPoint(leftTopPoint.x + textPadding, leftTopPoint.y +
+                textPadding + baselineHeight);
+        firstLine.setBaselineEndPoint(rightTopPoint.x - textPadding, rightTopPoint.y +
+                textPadding + baselineHeight);
         for (int i = 1; i < multiLines.size(); i++) {
             OneLineText curLineText = multiLines.get(i);
             OneLineText lastLineText = multiLines.get(i - 1);
-            curLineText.setBaselineStartPoint(lastLineText.baselineStartPoint.x, lastLineText.baselineStartPoint.y
-                + lineHeight);
-            curLineText.setBaselineEndPoint(lastLineText.baselineEndPoint.x, lastLineText.baselineEndPoint.y
-                + lineHeight);
+            curLineText.setBaselineStartPoint(lastLineText.baselineStartPoint.x, lastLineText
+                    .baselineStartPoint.y
+                    + lineHeight);
+            curLineText.setBaselineEndPoint(lastLineText.baselineEndPoint.x, lastLineText
+                    .baselineEndPoint.y
+                    + lineHeight);
         }
     }
 
@@ -516,7 +541,7 @@ public class FlexibleCaptionView extends View {
     private float calculateRotationDegree(float curX, float curY) {
         // 根据斜率算夹角
         return (float) Math.toDegrees(Math.atan2(curY - centerPoint.y, curX - centerPoint.x))
-            - (float) Math.toDegrees(Math.atan2(lastY - centerPoint.y, lastX - centerPoint.x));
+                - (float) Math.toDegrees(Math.atan2(lastY - centerPoint.y, lastX - centerPoint.x));
     }
 
     private float calculateScale(float curX, float curY) {
@@ -538,7 +563,6 @@ public class FlexibleCaptionView extends View {
 
     // 确定事件点击的区域
     private boolean determineTouchRegion(float curX, float curY) {
-        log("curX=" + curX + ",curY=" + curY);
         boolean consume = true;
         setFocus(true);
         if (rightBottomBmp != null && currentRightBottomRect.contains(curX, curY)) {
@@ -554,7 +578,7 @@ public class FlexibleCaptionView extends View {
             consume = false;
             setFocus(false);
         }
-        log(this + ",touchRegion=" + touchRegion.name());
+        log(this + "curX=" + curX + ",curY=" + curY + ",touchRegion=" + touchRegion.name());
         return consume;
     }
 
@@ -564,7 +588,8 @@ public class FlexibleCaptionView extends View {
         // 计算控制点的边界
         borderPath.computeBounds(r, true);
         // 设置区域路径和剪辑描述的区域
-        borderRegion.setPath(borderPath, new Region((int) r.left, (int) r.top, (int) r.right, (int) r.bottom));
+        borderRegion.setPath(borderPath, new Region((int) r.left, (int) r.top, (int) r.right,
+                (int) r.bottom));
         return borderRegion.contains((int) curX, (int) curY);
     }
 
@@ -573,41 +598,34 @@ public class FlexibleCaptionView extends View {
         updateLocationDataAndRefresh();
     }
 
-    float scale = 1;
-
     private void processScale(float scale) {
-        // 检查放大是否超过边界
+        // 检查缩放是否超过限定
         float maxScale = getWidth() * 1.0f / borderRect.width();
-        float minScale = iconSize * 2 / borderRect.width();
-        if (this.scale * scale > maxScale) {
-            scale = maxScale / this.scale;
-        } else if (this.scale * scale < minScale) {
-            scale = minScale / this.scale;
+        float minScale = iconSize * 2.0f / borderRect.width();
+        if (this.totalScale * scale > maxScale) {
+            scale = maxScale / this.totalScale;
+        } else if (this.totalScale * scale < minScale) {
+            scale = minScale / this.totalScale;
         }
-        this.scale *= scale;
+        this.totalScale *= scale;
         updateMatrix.postScale(scale, scale, centerPoint.x, centerPoint.y);
         updateTextPaint(scale);
         updateLocationDataAndRefresh();
     }
 
-    float degree;
-
     private void processRotate(float degree) {
-        this.degree *= degree;
+        this.totalDegree = (this.totalDegree + degree) % 360;
         updateMatrix.postRotate(degree, centerPoint.x, centerPoint.y);
         updateLocationDataAndRefresh();
     }
 
     // 字体相关参数改变
     private void updateTextPaint(float scale) {
-        textStrokeWidth *= scale;
-        textSize *= scale;
-        textPadding *= scale;
-        textPaint.setStrokeWidth(textStrokeWidth);
-        textPaint.setTextSize(textSize);
+        textPaint.setStrokeWidth(textStrokeWidth * totalScale);
+        textPaint.setTextSize(textSize * totalScale);
     }
 
-    // 更新位置信息
+    // 更新位置信息并重绘控件
     private void updateLocationDataAndRefresh() {
         updateBorderVertexData();
         updateTextBaselineLocationData(multiLines, updateMatrix);
@@ -620,8 +638,9 @@ public class FlexibleCaptionView extends View {
     private void updateBorderVertexData() {
         // 根据矩阵变化，映射到新的顶点位置
         float[] dst = new float[8];
-        updateMatrix.mapPoints(dst, new float[] {borderRect.left, borderRect.top, borderRect.right, borderRect.top,
-            borderRect.left, borderRect.bottom, borderRect.right, borderRect.bottom});
+        updateMatrix.mapPoints(dst, new float[]{borderRect.left, borderRect.top, borderRect
+                .right, borderRect.top,
+                borderRect.left, borderRect.bottom, borderRect.right, borderRect.bottom});
         leftTopPoint.x = dst[0];
         leftTopPoint.y = dst[1];
         rightTopPoint.x = dst[2];
@@ -640,12 +659,14 @@ public class FlexibleCaptionView extends View {
         centerPoint.y = (leftTopPoint.y + rightBottomPoint.y) / 2;
     }
 
-    private void updateTextBaselineLocationData(ArrayList<OneLineText> multiLines, Matrix updateMatrix) {
+    private void updateTextBaselineLocationData(ArrayList<OneLineText> multiLines, Matrix
+            updateMatrix) {
         // 根据矩阵变化，映射到新的baseline位置
         for (OneLineText oneLineText : multiLines) {
             float[] dst = new float[4];
-            updateMatrix.mapPoints(dst, new float[] {oneLineText.baselineStartPoint.x,
-                oneLineText.baselineStartPoint.y, oneLineText.baselineEndPoint.x, oneLineText.baselineEndPoint.y});
+            updateMatrix.mapPoints(dst, new float[]{oneLineText.baselineStartPoint.x,
+                    oneLineText.baselineStartPoint.y, oneLineText.baselineEndPoint.x, oneLineText
+                    .baselineEndPoint.y});
             oneLineText.setDrawBaselineStartPoint(dst[0], dst[1]);
             oneLineText.setDrawBaselineEndPoint(dst[2], dst[3]);
         }

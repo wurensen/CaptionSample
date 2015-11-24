@@ -6,9 +6,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 
+import java.util.ArrayList;
+
 /**
  * 字幕控件布局，提供多个字幕控件的控制，增加，移除，上下层关系的改变
- * 
+ *
  * Created by meitu on 2015/11/17.
  */
 public class CaptionLayout extends FrameLayout {
@@ -27,18 +29,34 @@ public class CaptionLayout extends FrameLayout {
 
     /**
      * 新增字幕控件
-     * @param captionView
+     * @param captionView 字幕控件
      */
     public void addCaptionView(FlexibleCaptionView captionView) {
+        clearChildrenFocus();
         addView(captionView);
     }
 
     /**
      * 移除字幕控件
-     * @param captionView
+     * @param captionView 字幕控件
      */
     public void removeCaptionView(FlexibleCaptionView captionView) {
         removeView(captionView);
+    }
+
+    /**
+     * @return 获取所有字幕控件的信息
+     */
+    public ArrayList<CaptionInfo> findAllCaptionInfos() {
+        ArrayList<CaptionInfo> captionInfos = new ArrayList<>();
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            if (child instanceof FlexibleCaptionView) {
+                FlexibleCaptionView captionView = (FlexibleCaptionView) child;
+                captionInfos.add(captionView.getCurrentCaption());
+            }
+        }
+        return captionInfos;
     }
 
     /**
@@ -60,15 +78,19 @@ public class CaptionLayout extends FrameLayout {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-            // 去除所有focus状态
-            for (int i = 0; i < getChildCount(); i++) {
-                View child = getChildAt(i);
-                if (child instanceof FlexibleCaptionView) {
-                    FlexibleCaptionView captionView = (FlexibleCaptionView) child;
-                    captionView.setFocus(false);
-                }
-            }
+            clearChildrenFocus();
         }
         return super.dispatchTouchEvent(ev);
+    }
+
+    private void clearChildrenFocus() {
+        // 去除所有字幕控件的focus状态
+        for (int i = 0; i < getChildCount(); i++) {
+            View child = getChildAt(i);
+            if (child instanceof FlexibleCaptionView) {
+                FlexibleCaptionView captionView = (FlexibleCaptionView) child;
+                captionView.setFocus(false);
+            }
+        }
     }
 }
