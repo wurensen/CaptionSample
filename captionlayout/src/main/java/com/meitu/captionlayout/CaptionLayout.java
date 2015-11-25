@@ -1,12 +1,12 @@
 package com.meitu.captionlayout;
 
+import java.util.ArrayList;
+
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
-
-import java.util.ArrayList;
 
 /**
  * 字幕控件布局，提供多个字幕控件的控制，增加，移除，上下层关系的改变
@@ -75,8 +75,12 @@ public class CaptionLayout extends FrameLayout {
         return null;
     }
 
+    protected boolean isPointerDown;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        // 记录是否为多指按下
+        isPointerDown = (ev.getAction() & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_POINTER_DOWN;
         if (ev.getAction() == MotionEvent.ACTION_DOWN) {
             clearChildrenFocus();
         }

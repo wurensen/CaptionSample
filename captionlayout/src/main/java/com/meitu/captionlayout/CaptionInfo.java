@@ -10,7 +10,7 @@ import android.graphics.Rect;
 public class CaptionInfo {
     public Bitmap bitmap; // 字幕图片
     public Rect locationRect; // 字幕图片的位置信息
-    public float degree; // 旋转角度
+    public float degree; // 旋转角度，绕矩形中心点旋转
 
     public CaptionInfo() {
     }
