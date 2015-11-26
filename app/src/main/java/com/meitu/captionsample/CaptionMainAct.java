@@ -8,21 +8,23 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.meitu.captionlayout.CaptionInfo;
 import com.meitu.captionlayout.CaptionLayout;
 import com.meitu.captionlayout.FlexibleCaptionView;
 
-public class MainActivity extends Activity {
+public class CaptionMainAct extends Activity {
 
     private CaptionLayout captionLayoutContainer;
     private FlexibleCaptionView captionView1;
     private ImageView imgViewShow;
+    private TextView labelExportInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.act_caption_main);
 
         initView();
     }
@@ -31,6 +33,7 @@ public class MainActivity extends Activity {
         captionLayoutContainer = getView(R.id.captionLayout_container);
         captionView1 = getView(R.id.captionView1);
         imgViewShow = getView(R.id.imgView_show);
+        labelExportInfo = getView(R.id.label_export_info);
     }
 
     private <T extends View> T getView(int id) {
@@ -54,6 +57,11 @@ public class MainActivity extends Activity {
             CaptionInfo captionInfo = captionView.getCurrentCaption();
             Log.w("", captionInfo.toString());
             imgViewShow.setImageBitmap(captionInfo.bitmap);
+            labelExportInfo.setText("locationRect=" + captionInfo.locationRect.toShortString()
+                    + ",degree=" + captionInfo.degree);
+        } else {
+            imgViewShow.setImageBitmap(null);
+            labelExportInfo.setText(null);
         }
     }
 

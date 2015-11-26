@@ -67,9 +67,11 @@ public class FlexibleCaptionView extends View {
     private String mText = "";
     private float mTextStrokeWidth = 1;
     private float mTextSize = 50f;
+    private int mTextMargin = 10;
     private int mTextColor = Color.BLACK;
     private Typeface mTextTypeFace = Typeface.DEFAULT;
     private ArrayList<OneLineText> mMultiLines = new ArrayList<>();
+    private Path mTextPath = new Path();
     private int mOneLineHeight;
     private int mBaselineHeight;
 
@@ -467,12 +469,12 @@ public class FlexibleCaptionView extends View {
     }
 
     private void drawText(Canvas canvas, ArrayList<OneLineText> multiLines) {
-        Path textPath = new Path();
         for (OneLineText oneLineText : multiLines) {
-            textPath.moveTo(oneLineText.drawBaselineStartPoint.x, oneLineText.drawBaselineStartPoint.y);
-            textPath.lineTo(oneLineText.drawBaselineEndPoint.x, oneLineText.drawBaselineEndPoint.y);
-            canvas.drawTextOnPath(oneLineText.text, textPath, 0, 0, mTextPaint);
-            textPath.reset();
+            mTextPath.reset();
+            mTextPath.moveTo(oneLineText.drawBaselineStartPoint.x, oneLineText
+                    .drawBaselineStartPoint.y);
+            mTextPath.lineTo(oneLineText.drawBaselineEndPoint.x, oneLineText.drawBaselineEndPoint.y);
+            canvas.drawTextOnPath(oneLineText.text, mTextPath, 0, 0, mTextPaint);
         }
     }
 
@@ -500,7 +502,7 @@ public class FlexibleCaptionView extends View {
         mOneLineHeight = fmi.bottom - fmi.top;
         mBaselineHeight = -fmi.top;
 
-        float availableWidthSpace = getWidth(); // 每行允许写文字最大空间
+        float availableWidthSpace = getWidth() + 2 * mTextMargin; // 每行允许写文字最大空间
         float[] textWidths = new float[mText.length()];
         mTextPaint.getTextWidths(mText, 0, mText.length(), textWidths);
         float totalWidths = 0;
@@ -529,8 +531,8 @@ public class FlexibleCaptionView extends View {
 
         int lineCount = mMultiLines.size();
         // 根据行数来确定矩形框宽高
-        float borderWidth = lineCount > 1 ? maxLineWidth : totalWidths;
-        float borderHeight = mOneLineHeight * lineCount;
+        float borderWidth = lineCount > 1 ? (maxLineWidth + 2 * mTextMargin) : (totalWidths + 2 * mTextMargin);
+        float borderHeight = mOneLineHeight * lineCount + 2 * mTextMargin;
         log("mOneLineHeight=" + mOneLineHeight + ",borderWidth:" + borderWidth + ",borderHeight=" + borderHeight);
 
         float rectLeft = (getWidth() - borderWidth) / 2;
@@ -543,8 +545,8 @@ public class FlexibleCaptionView extends View {
     // 确定文字初始化时baseline的位置
     private void determineTextInitBaselineLocation(int baselineHeight, int lineHeight) {
         OneLineText firstLine = mMultiLines.get(0);
-        firstLine.setBaselineStartPoint(mLeftTopPoint.x, mLeftTopPoint.y + baselineHeight);
-        firstLine.setBaselineEndPoint(mRightTopPoint.x, mRightTopPoint.y + baselineHeight);
+        firstLine.setBaselineStartPoint(mLeftTopPoint.x + mTextMargin, mLeftTopPoint.y + mTextMargin + baselineHeight);
+        firstLine.setBaselineEndPoint(mRightTopPoint.x - mTextMargin, mRightTopPoint.y + mTextMargin + baselineHeight);
         for (int i = 1; i < mMultiLines.size(); i++) {
             OneLineText curLineText = mMultiLines.get(i);
             OneLineText lastLineText = mMultiLines.get(i - 1);
@@ -750,7 +752,7 @@ public class FlexibleCaptionView extends View {
             consume = false;
             setFocus(false);
         }
-        log(this + "curX=" + curX + ",curY=" + curY + ",mTouchRegion=" + mTouchRegion.name());
+        log("determineTouchRegion,curX=" + curX + ",curY=" + curY + ",mTouchRegion=" + mTouchRegion.name());
         return consume;
     }
 
