@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -31,7 +32,7 @@ public class CaptionMainAct extends Activity {
 
     private void initView() {
         captionLayoutContainer = getView(R.id.captionLayout_container);
-        captionView1 = getView(R.id.captionView1);
+        // captionView1 = getView(R.id.captionView1);
         imgViewShow = getView(R.id.imgView_show);
         labelExportInfo = getView(R.id.label_export_info);
     }
@@ -47,7 +48,7 @@ public class CaptionMainAct extends Activity {
     public void edit(View view) {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
-            intent2EditCaptionAct(false, captionView.getText());
+            intent2EditCaptionAct(false, captionView.getText().toString());
         }
     }
 
@@ -57,8 +58,8 @@ public class CaptionMainAct extends Activity {
             CaptionInfo captionInfo = captionView.getCurrentCaption();
             Log.w("", captionInfo.toString());
             imgViewShow.setImageBitmap(captionInfo.bitmap);
-            labelExportInfo.setText("locationRect=" + captionInfo.locationRect.toShortString()
-                    + ",degree=" + captionInfo.degree);
+            labelExportInfo.setText("locationRect=" + captionInfo.locationRect.toShortString() + ",degree="
+                + captionInfo.degree);
         } else {
             imgViewShow.setImageBitmap(null);
             labelExportInfo.setText(null);
@@ -77,7 +78,7 @@ public class CaptionMainAct extends Activity {
         if (resultCode == RESULT_OK) {
             boolean isAdd = data.getBooleanExtra("isAdd", true);
             String caption = data.getStringExtra("caption");
-            float textSize = data.getIntExtra("textSize", 0);
+            float textSize = data.getFloatExtra("textSize", 0);
             int textColor = data.getIntExtra("textColor", Color.BLACK);
             int typeFaceIndex = data.getIntExtra("typeFaceIndex", 0);
             int typeFaceStyleIndex = data.getIntExtra("typeFaceStyleIndex", 0);
@@ -93,8 +94,16 @@ public class CaptionMainAct extends Activity {
     }
 
     private void addCaption(String caption, float textSize, int textColor, Typeface typeFace) {
-        FlexibleCaptionView addCaptionView = new FlexibleCaptionView(this);
-        configCaptionView(addCaptionView, caption, textSize, textColor, typeFace);
+        // FlexibleCaptionView addCaptionView = new FlexibleCaptionView(this);
+        // configCaptionView(addCaptionView, caption, textSize, textColor, typeFace);
+        FlexibleCaptionView addCaptionView =
+            FlexibleCaptionView.Builder.create(this)
+                .loadConfigFromEditText(AddEditCaptionAct.ediTxtCaption)
+                .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
+                    android.R.drawable.ic_menu_crop)
+                .build();
+        Log.d("Flex",
+                AddEditCaptionAct.ediTxtCaption.getWidth() + "," + AddEditCaptionAct.ediTxtCaption.getPaddingLeft());
         captionLayoutContainer.addCaptionView(addCaptionView);
     }
 
@@ -102,9 +111,12 @@ public class CaptionMainAct extends Activity {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
             captionView.setText(caption);
-            captionView.setTextSizeDp(textSize);
+            Log.d("Flex",
+                AddEditCaptionAct.ediTxtCaption.getWidth() + "," + AddEditCaptionAct.ediTxtCaption.getPaddingLeft());
+            captionView.setTextBorderWidth(AddEditCaptionAct.ediTxtCaption.getWidth());
+            captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
             captionView.setTextColor(textColor);
-            captionView.setTextTypeFace(typeFace);
+            captionView.setTextTypeface(typeFace);
         }
     }
 
@@ -112,8 +124,8 @@ public class CaptionMainAct extends Activity {
         Typeface typeFace) {
         captionView.setText(caption);
         captionView.setTextColor(textColor);
-        captionView.setTextSizePx(textSize);
-        captionView.setTextTypeFace(typeFace);
+        captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
+        captionView.setTextTypeface(typeFace);
         captionView.setBorderColor(Color.RED);
         captionView.setIconSizeDp(40);
         captionView.setLeftTopIcon(android.R.drawable.ic_delete);

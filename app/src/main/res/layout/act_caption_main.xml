@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:app="http://schemas.android.com/apk/res-auto"
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -12,7 +11,7 @@
         android:layout_height="match_parent"
         android:background="#e4efef">
 
-        <com.meitu.captionlayout.FlexibleCaptionView
+        <!--<com.meitu.captionlayout.FlexibleCaptionView
             android:id="@+id/captionView1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -20,7 +19,7 @@
             app:rightBottomIcon="@android:drawable/ic_menu_crop"
             app:rightTopIcon="@android:drawable/checkbox_on_background"
             app:text="第一个通过布局"
-            app:textSize="30dp"/>
+            app:textSize="30dp"/>-->
 
     </com.meitu.captionlayout.CaptionLayout>
 

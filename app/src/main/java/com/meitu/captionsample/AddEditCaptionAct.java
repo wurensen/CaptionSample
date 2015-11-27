@@ -21,7 +21,7 @@ public class AddEditCaptionAct extends Activity {
     public static int[] typefaceStyle = new int[] {Typeface.NORMAL, Typeface.BOLD, Typeface.ITALIC,
         Typeface.BOLD_ITALIC};
 
-    private EditText ediTxtCaption;
+    public static EditText ediTxtCaption;
     private RadioGroup rdoGroupColor, rdoGroupTypeFace, rdoGroupStyle;
 
     boolean isAdd;
@@ -133,10 +133,11 @@ public class AddEditCaptionAct extends Activity {
     }
 
     public void finish(View view) {
-        String caption = ediTxtCaption.getText().toString();
+        CharSequence caption = ediTxtCaption.getText().toString();
         if (!TextUtils.isEmpty(caption)) {
             textSize = ediTxtCaption.getTextSize();
             Intent data = new Intent();
+            data.putExtra("", ediTxtCaption.getText());
             data.putExtra("isAdd", isAdd);
             data.putExtra("caption", caption);
             data.putExtra("textSize", textSize);
