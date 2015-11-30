@@ -15,6 +15,7 @@ import com.meitu.captionlayout.CaptionInfo;
 import com.meitu.captionlayout.CaptionLayout;
 import com.meitu.captionlayout.FlexibleCaptionView;
 
+
 public class CaptionMainAct extends Activity {
 
     private CaptionLayout captionLayoutContainer;
@@ -77,46 +78,64 @@ public class CaptionMainAct extends Activity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             boolean isAdd = data.getBooleanExtra("isAdd", true);
-            String caption = data.getStringExtra("caption");
-            float textSize = data.getFloatExtra("textSize", 0);
-            int textColor = data.getIntExtra("textColor", Color.BLACK);
-            int typeFaceIndex = data.getIntExtra("typeFaceIndex", 0);
-            int typeFaceStyleIndex = data.getIntExtra("typeFaceStyleIndex", 0);
-            Typeface typeface =
-                Typeface.create(AddEditCaptionAct.typefaces[typeFaceIndex],
-                    AddEditCaptionAct.typefaceStyle[typeFaceStyleIndex]);
+            CaptionConfig captionConfig =
+                (CaptionConfig) data.getSerializableExtra(CaptionConfig.class.getSimpleName());
+            Log.d("Flex", captionConfig.toString());
             if (isAdd) {
-                addCaption(caption, textSize, textColor, typeface);
+                // 1.直接根据EditText的参数来创建字幕
+                // addCaptionWidthEditText();
+                // 2.通过Builder的方式创建
+                addCaptionWithBuilder(captionConfig);
             } else {
-                updateCaption(caption, textSize, textColor, typeface);
+                updateCaption(captionConfig);
             }
         }
     }
 
-    private void addCaption(String caption, float textSize, int textColor, Typeface typeFace) {
-        // FlexibleCaptionView addCaptionView = new FlexibleCaptionView(this);
-        // configCaptionView(addCaptionView, caption, textSize, textColor, typeFace);
+    private void addCaptionWidthEditText() {
         FlexibleCaptionView addCaptionView =
             FlexibleCaptionView.Builder.create(this)
                 .loadConfigFromEditText(AddEditCaptionAct.ediTxtCaption)
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
                     android.R.drawable.ic_menu_crop)
                 .build();
-        Log.d("Flex",
-                AddEditCaptionAct.ediTxtCaption.getWidth() + "," + AddEditCaptionAct.ediTxtCaption.getPaddingLeft());
         captionLayoutContainer.addCaptionView(addCaptionView);
     }
 
-    private void updateCaption(String caption, float textSize, int textColor, Typeface typeFace) {
+    private void addCaptionWithBuilder(CaptionConfig config) {
+        Typeface typeface =
+            Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
+                AddEditCaptionAct.typefaceStyles[config.typefaceStyleIndex]);
+        FlexibleCaptionView addCaptionView =
+            FlexibleCaptionView.Builder.create(this)
+                .text(config.text)
+                .textSize(TypedValue.COMPLEX_UNIT_PX, config.textSize)
+                .textBorderWidth(config.textBorderWidth)
+                .textColor(config.textColor)
+                .textTypeface(typeface)
+                .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
+                    android.R.drawable.ic_menu_crop)
+                .paddingLeft(TypedValue.COMPLEX_UNIT_PX, config.paddingLeft)
+                .paddingRight(TypedValue.COMPLEX_UNIT_PX, config.paddingRight)
+                .paddingTop(TypedValue.COMPLEX_UNIT_PX, config.paddingTop)
+                .paddingBottom(TypedValue.COMPLEX_UNIT_PX, config.paddingBottom)
+                .iconSize(TypedValue.COMPLEX_UNIT_DIP, 35)
+                .textBorderColor(Color.MAGENTA)
+                .build();
+        captionLayoutContainer.addCaptionView(addCaptionView);
+    }
+
+    private void updateCaption(CaptionConfig config) {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
-            captionView.setText(caption);
-            Log.d("Flex",
-                AddEditCaptionAct.ediTxtCaption.getWidth() + "," + AddEditCaptionAct.ediTxtCaption.getPaddingLeft());
-            captionView.setTextBorderWidth(AddEditCaptionAct.ediTxtCaption.getWidth());
-            captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
-            captionView.setTextColor(textColor);
-            captionView.setTextTypeface(typeFace);
+            captionView.setText(config.text);
+            captionView.setTextBorderWidth(config.textBorderWidth);
+            captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, config.textSize);
+            captionView.setTextColor(config.textColor);
+            Typeface typeface =
+                Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
+                    AddEditCaptionAct.typefaceStyles[config.typefaceStyleIndex]);
+            captionView.setTextTypeface(typeface);
         }
     }
 

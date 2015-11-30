@@ -39,7 +39,8 @@ public class FlexibleCaptionView extends View {
     /**
      * 支持的最大字体大小，单位像素
      */
-    private static final int MAX_TEXT_SIZE = 150;
+    private static final int MAX_TEXT_SIZE = 200;
+    private boolean debug;
 
     private Matrix mUpdateMatrix = new Matrix(); // 变化矩阵，用来获取最新的点
 
@@ -66,8 +67,8 @@ public class FlexibleCaptionView extends View {
 
     private TextPaint mTextPaint; // 写字幕的笔
     private CharSequence mText = "";
-    private float mTextSize = 50f;
-    private int mTextColor = Color.BLACK;
+    private float mTextSize;
+    private int mTextColor;
     private Typeface mTextTypeface = Typeface.DEFAULT;
     private int mTextBorderWidth; // 文字的边界宽度，和padding一起决定换行宽度
     private int mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
@@ -75,6 +76,7 @@ public class FlexibleCaptionView extends View {
     private int mTextBorderHeight;
     private PointF mInitTextStartPoint = new PointF();
     private StaticLayout mTextLayout;
+    private CharSequence mMaxWidthLineText; // 最长一行的内容，用于换行切割
 
     private TouchRegion mTouchRegion; // 触摸的区域
     private TouchMode mTouchMode = TouchMode.NONE; // 触摸模式
@@ -96,41 +98,50 @@ public class FlexibleCaptionView extends View {
 
     public FlexibleCaptionView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-
-        // 设置默认属性值
-        mIconSize = (int) convert2px(context, TypedValue.COMPLEX_UNIT_DIP, 30f);
-
         // 加载自定义属性
-        if (attrs != null) {
-            loadAttrs(context, attrs);
-        }
+        loadAttrs(context, attrs);
 
         initPaint();
     }
 
     private void loadAttrs(Context context, AttributeSet attrs) {
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.FlexibleCaptionView);
-        int count = typedArray.getIndexCount();
-        for (int i = 0; i < count; i++) {
-            int attr = typedArray.getIndex(i);
-            if (attr == R.styleable.FlexibleCaptionView_text) {
-                mText = typedArray.getString(attr);
-            } else if (attr == R.styleable.FlexibleCaptionView_textSize) {
-                mTextSize = typedArray.getDimensionPixelSize(attr, (int) mTextSize);
-            } else if (attr == R.styleable.FlexibleCaptionView_textColor) {
-                mTextColor = typedArray.getColor(attr, mTextColor);
-            } else if (attr == R.styleable.FlexibleCaptionView_borderColor) {
-                mBorderColor = typedArray.getColor(attr, mBorderColor);
-            } else if (attr == R.styleable.FlexibleCaptionView_leftTopIcon) {
-                mLeftTopBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
-            } else if (attr == R.styleable.FlexibleCaptionView_rightTopIcon) {
-                mRightTopBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
-            } else if (attr == R.styleable.FlexibleCaptionView_rightBottomIcon) {
-                mRightBottomBmp = BitmapFactory.decodeResource(getResources(), typedArray.getResourceId(attr, 0));
-            } else if (attr == R.styleable.FlexibleCaptionView_iconSize) {
-                mIconSize = typedArray.getDimensionPixelSize(attr, mIconSize);
-            }
+        mText = typedArray.getString(R.styleable.FlexibleCaptionView_text);
+        if (mText == null) {
+            mText = "";
         }
+        mTextSize =
+            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textSize,
+                (int) convert2px(context, TypedValue.COMPLEX_UNIT_DIP, 20f));
+        mTextColor = typedArray.getColor(R.styleable.FlexibleCaptionView_textColor, Color.BLACK);
+
+        int padding = typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textPadding, 0);
+        mPaddingLeft = mPaddingRight = mPaddingTop = mPaddingBottom = padding;
+        mPaddingLeft = typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textPaddingLeft, mPaddingLeft);
+        mPaddingRight =
+            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textPaddingRight, mPaddingRight);
+        mPaddingTop = typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textPaddingTop, mPaddingTop);
+        mPaddingBottom =
+            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textPaddingBottom, mPaddingBottom);
+
+        mTextBorderWidth =
+            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textBorderWidth,
+                (int) (mTextSize * mText.length() + mPaddingLeft + mPaddingRight));
+
+        mBorderColor = typedArray.getColor(R.styleable.FlexibleCaptionView_borderColor, Color.GRAY);
+
+        mLeftTopBmp =
+            BitmapFactory.decodeResource(getResources(),
+                typedArray.getResourceId(R.styleable.FlexibleCaptionView_leftTopIcon, 0));
+        mRightTopBmp =
+            BitmapFactory.decodeResource(getResources(),
+                typedArray.getResourceId(R.styleable.FlexibleCaptionView_rightTopIcon, 0));
+        mRightBottomBmp =
+            BitmapFactory.decodeResource(getResources(),
+                typedArray.getResourceId(R.styleable.FlexibleCaptionView_rightBottomIcon, 0));
+        mIconSize =
+            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_iconSize,
+                (int) convert2px(context, TypedValue.COMPLEX_UNIT_DIP, 30f));
         typedArray.recycle();
     }
 
@@ -162,16 +173,17 @@ public class FlexibleCaptionView extends View {
 
         private Context mContext;
         private CharSequence mText;
-        private float mTextSize;
-        private int mTextBorderWidth;
-        private int mTextColor;
+        private Float mTextSize;
+        private Integer mTextColor;
+        private Integer mTextBorderWidth;
+        private Integer mTextBorderColor;
         private Typeface mTextTypeface;
-        private int mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
+        private Integer mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
         private Bitmap mLeftTopIconBmp, mRightTopIconBmp, mRightBottomIconBmp;
+        private Integer mIconSize;
 
         private Builder(Context context) {
             mContext = context;
-            // TODO: 2015/11/27 默认值的设置
         }
 
         public static Builder create(Context context) {
@@ -205,13 +217,18 @@ public class FlexibleCaptionView extends View {
             return this;
         }
 
+        public Builder textColor(int textColor) {
+            mTextColor = textColor;
+            return this;
+        }
+
         public Builder textBorderWidth(int textBorderWidth) {
             mTextBorderWidth = textBorderWidth;
             return this;
         }
 
-        public Builder textColor(int textColor) {
-            mTextColor = textColor;
+        public Builder textBorderColor(int textBorderColor) {
+            mTextBorderColor = textBorderColor;
             return this;
         }
 
@@ -257,26 +274,50 @@ public class FlexibleCaptionView extends View {
             return this;
         }
 
-        public FlexibleCaptionView build() {
-            FlexibleCaptionView captionView = new FlexibleCaptionView(mContext);
-            captionView.mText = mText;
-            captionView.mTextSize = mTextSize;
-            captionView.mTextBorderWidth = mTextBorderWidth;
-            captionView.mTextColor = mTextColor;
-            captionView.mTextTypeface = mTextTypeface;
-
-            captionView.mPaddingLeft = mPaddingLeft;
-            captionView.mPaddingRight = mPaddingRight;
-            captionView.mPaddingTop = mPaddingTop;
-            captionView.mPaddingBottom = mPaddingBottom;
-
-            captionView.mLeftTopBmp = mLeftTopIconBmp;
-            captionView.mRightTopBmp = mRightTopIconBmp;
-            captionView.mRightBottomBmp = mRightBottomIconBmp;
-            captionView.refresh(true);
-            return captionView;
+        public Builder iconSize(int unit, int value) {
+            mIconSize = (int) convert2px(mContext, unit, value);
+            return this;
         }
 
+        public FlexibleCaptionView build() {
+            FlexibleCaptionView view = new FlexibleCaptionView(mContext);
+            view.mText = mText == null ? view.mText : mText;
+            view.mTextSize = mTextSize == null ? view.mTextSize : mTextSize;
+            view.mTextColor = mTextColor == null ? view.mTextColor : mTextColor;
+            view.mBorderColor = mTextBorderColor == null ? view.mBorderColor : mTextBorderColor;
+            view.mTextTypeface = mTextTypeface == null ? view.mTextTypeface : mTextTypeface;
+
+            view.mPaddingLeft = mPaddingLeft == null ? view.mPaddingLeft : mPaddingLeft;
+            view.mPaddingRight = mPaddingRight == null ? view.mPaddingRight : mPaddingRight;
+            view.mPaddingTop = mPaddingTop == null ? view.mPaddingTop : mPaddingTop;
+            view.mPaddingBottom = mPaddingBottom == null ? view.mPaddingBottom : mPaddingBottom;
+            view.mTextBorderWidth =
+                mTextBorderWidth == null ? (int) (view.mText.length() * view.mTextSize + view.mPaddingLeft + view.mPaddingRight)
+                    : mTextBorderWidth;
+
+            view.mLeftTopBmp = mLeftTopIconBmp;
+            view.mRightTopBmp = mRightTopIconBmp;
+            view.mRightBottomBmp = mRightBottomIconBmp;
+            view.mIconSize = mIconSize == null ? view.mIconSize : mIconSize;
+            view.refresh(true);
+            return view;
+        }
+
+    }
+
+    /**
+     * @return 获取是否为调试模式
+     */
+    public boolean isDebug() {
+        return debug;
+    }
+
+    /**
+     * 设置是否为调试模式
+     * @param debug 是否调试
+     */
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 
     /**
@@ -347,13 +388,20 @@ public class FlexibleCaptionView extends View {
      */
     public void setTextSize(int unit, float value) {
         if (value <= 0) {
-            log("mTextSize must>0");
+            log("mTextSize must be > 0");
             return;
         }
         float textSize = convert2px(getContext(), unit, value);
         this.mTextSize = textSize > MAX_TEXT_SIZE ? MAX_TEXT_SIZE : textSize;
         mTextPaint.setTextSize(textSize);
         refresh(true);
+    }
+
+    /**
+     * @return 获取文字边框宽度
+     */
+    public int getTextBorderWidth() {
+        return mTextBorderWidth;
     }
 
     /**
@@ -373,6 +421,66 @@ public class FlexibleCaptionView extends View {
     public void setPadding(int unit, float value) {
         mPaddingLeft = mPaddingRight = mPaddingTop = mPaddingBottom = (int) convert2px(getContext(), unit, value);
         refresh(true);
+    }
+
+    /**
+     * @return 获取边框与文字左边间距，单位px
+     */
+    public int getPaddingLeft() {
+        return mPaddingLeft;
+    }
+
+    /**
+     * 设置边框与文字左边间距，会影响内容换行
+     * @param mPaddingLeft 间距，单位px
+     */
+    public void setPaddingLeft(int mPaddingLeft) {
+        this.mPaddingLeft = mPaddingLeft;
+    }
+
+    /**
+     * @return 获取边框与文字右边间距，单位px
+     */
+    public int getPaddingRight() {
+        return mPaddingRight;
+    }
+
+    /**
+     * 设置边框与文字右边间距，会影响内容换行
+     * @param mPaddingRight 间距，单位px
+     */
+    public void setPaddingRight(int mPaddingRight) {
+        this.mPaddingRight = mPaddingRight;
+    }
+
+    /**
+     * @return 获取边框与上字左边间距，单位px
+     */
+    public int getPaddingTop() {
+        return mPaddingTop;
+    }
+
+    /**
+     * 设置边框与文字上边间距
+     * @param mPaddingTop 间距，单位px
+     */
+    public void setPaddingTop(int mPaddingTop) {
+        this.mPaddingTop = mPaddingTop;
+    }
+
+    /**
+     * @return 获取边框与文字下边间距，单位px
+     */
+    public int getPaddingBottom() {
+        return mPaddingBottom;
+    }
+
+    /**
+     * 设置边框与文字下边间距
+     * @param mPaddingBottom 间距，单位px
+     */
+    public void setPaddingBottom(int mPaddingBottom) {
+        this.mPaddingBottom = mPaddingBottom;
     }
 
     /**
@@ -419,6 +527,10 @@ public class FlexibleCaptionView extends View {
         setIconSizePx((int) convert2px(getContext(), TypedValue.COMPLEX_UNIT_DIP, iconSize));
     }
 
+    public Bitmap getLeftTopBmp() {
+        return mLeftTopBmp;
+    }
+
     /**
      * 设置左上角删除功能图标
      *
@@ -438,6 +550,10 @@ public class FlexibleCaptionView extends View {
         setLeftTopIcon(BitmapFactory.decodeResource(getResources(), id));
     }
 
+    public Bitmap getmRightTopBmp() {
+        return mRightTopBmp;
+    }
+
     /**
      * 设置右上角删除功能图标
      *
@@ -455,6 +571,10 @@ public class FlexibleCaptionView extends View {
      */
     public void setRightTopIcon(int id) {
         setRightTopIcon(BitmapFactory.decodeResource(getResources(), id));
+    }
+
+    public Bitmap getmRightBottomBmp() {
+        return mRightBottomBmp;
     }
 
     /**
@@ -518,7 +638,7 @@ public class FlexibleCaptionView extends View {
         Bitmap textBitmap = Bitmap.createBitmap(locationRect.width(), locationRect.height(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(textBitmap);
         canvas.translate(mPaddingLeft * mTotalScale, mPaddingTop * mTotalScale);
-        int breakWidth = (int) Math.ceil(mLineBreakWidth * mTotalScale);
+        int breakWidth = (int) mTextPaint.measureText(mMaxWidthLineText, 0, mMaxWidthLineText.length());
         mTextLayout = new StaticLayout(mText, mTextPaint, breakWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false);
         mTextLayout.draw(canvas);
         return new CaptionInfo(textBitmap, locationRect, mTotalDegree);
@@ -542,8 +662,8 @@ public class FlexibleCaptionView extends View {
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        log("onLayout");
         super.onLayout(changed, left, top, right, bottom);
+        log("onLayout");
     }
 
     @Override
@@ -609,7 +729,8 @@ public class FlexibleCaptionView extends View {
         // 旋转画布
         canvas.rotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
         canvas.translate(dst[0], dst[1]);
-        int breakWidth = (int) Math.ceil(mLineBreakWidth * mTotalScale);
+        // 根据最宽一行测量出宽度用来切割
+        int breakWidth = (int) mTextPaint.measureText(mMaxWidthLineText, 0, mMaxWidthLineText.length());
         mTextLayout = new StaticLayout(mText, mTextPaint, breakWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false);
         mTextLayout.draw(canvas);
         canvas.restore();
@@ -640,13 +761,12 @@ public class FlexibleCaptionView extends View {
     }
 
     private void initBorderRect() {
-
-        log("mTextBorderWidth=" + mTextBorderWidth + ",measureText=" + mTextPaint.measureText(mText, 0, mText.length()));
         mLineBreakWidth = mTextBorderWidth - mPaddingLeft - mPaddingRight;
         mTextLayout =
             new StaticLayout(mText, mTextPaint, mLineBreakWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false);
         mTextBorderHeight = mTextLayout.getHeight() + mPaddingTop + mPaddingBottom;
-        log("mLineBreakWidth=" + mLineBreakWidth);
+        // 获取最宽一行的内容
+        mMaxWidthLineText = getMaxWidthLineText(mTextLayout);
         // 边界检查，检查外框是否超出控件
         if (checkBounds()) {
             float rectLeft = (getWidth() - mTextBorderWidth) / 2;
@@ -656,6 +776,20 @@ public class FlexibleCaptionView extends View {
             mBorderRect.set(rectLeft, rectTop, rectRight, rectBottom);
             mInitTextStartPoint.set(rectLeft + mPaddingLeft, rectTop + mPaddingTop);
         }
+    }
+
+    private CharSequence getMaxWidthLineText(StaticLayout mTextLayout) {
+        int lineStart = mTextLayout.getLineStart(0), lineEnd = mTextLayout.getLineEnd(0);
+        float maxWidth = mTextLayout.getLineWidth(0);
+        for (int i = 1; i < mTextLayout.getLineCount(); i++) {
+            float lineWidth = mTextLayout.getLineWidth(i);
+            if (lineWidth > maxWidth) {
+                maxWidth = lineWidth;
+                lineStart = mTextLayout.getLineStart(i);
+                lineEnd = mTextLayout.getLineEnd(i);
+            }
+        }
+        return mText.subSequence(lineStart, lineEnd);
     }
 
     private boolean checkBounds() {
@@ -708,10 +842,10 @@ public class FlexibleCaptionView extends View {
         mCurrentRightBottomRect.set(left, top, right, bottom);
     }
 
-    private float lastX, lastY; // 上次点击的坐标
-    private float downDistance; // 按下时两指间的距离
-    private float pointerDegree; // 按下时两指的旋转角度
-    private int alwaysPressedPointId = 0;
+    private float mLastX, mLastY; // 上次点击的坐标
+    private float mDownDistance; // 按下时两指间的距离
+    private float mPointerDegree; // 按下时两指的旋转角度
+    private int mStillDownPointId = 0;
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -736,9 +870,9 @@ public class FlexibleCaptionView extends View {
                 float secondPointX = event.getX(event.getActionIndex());
                 float secondPointY = event.getY(event.getActionIndex());
                 if (isInBorderRegion(secondPointX, secondPointY)) {
-                    downDistance = calculatePointsDistance(event);
+                    mDownDistance = calculatePointsDistance(event);
                     mTouchMode = TouchMode.POINTER_SCALE_ROTATE;
-                    pointerDegree = calculatePointerRotationDegree(event);
+                    mPointerDegree = calculatePointerRotationDegree(event);
                 } else {
                     mTouchMode = TouchMode.NONE;
                 }
@@ -751,11 +885,11 @@ public class FlexibleCaptionView extends View {
                 // 前两个按下的点有效
                 if (leavePointerId < 2) {
                     // 前一个按住的点离开，切换点击坐标
-                    if (leavePointerId == alwaysPressedPointId) {
-                        alwaysPressedPointId = alwaysPressedPointId == 0 ? 1 : 0;
+                    if (leavePointerId == mStillDownPointId) {
+                        mStillDownPointId = mStillDownPointId == 0 ? 1 : 0;
                     }
-                    curX = event.getX(alwaysPressedPointId);
-                    curY = event.getY(alwaysPressedPointId);
+                    curX = event.getX(mStillDownPointId);
+                    curY = event.getY(mStillDownPointId);
                     if (isInBorderRegion(curX, curY)) {
                         // 留下的点还在区域内，转为拖拽
                         mTouchMode = TouchMode.DRAG;
@@ -767,11 +901,11 @@ public class FlexibleCaptionView extends View {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
                 mTouchMode = TouchMode.NONE;
-                alwaysPressedPointId = 0;
+                mStillDownPointId = 0;
                 break;
         }
-        lastX = curX;
-        lastY = curY;
+        mLastX = curX;
+        mLastY = curY;
         return consume;
     }
 
@@ -793,17 +927,17 @@ public class FlexibleCaptionView extends View {
         switch (mTouchRegion) {
             case INSIDE:
                 if (mTouchMode == TouchMode.DRAG) {
-                    processMove(curX - lastX, curY - lastY);
+                    processMove(curX - mLastX, curY - mLastY);
                 } else if (mTouchMode == TouchMode.POINTER_SCALE_ROTATE) {
                     // 双指缩放
                     float curDistance = calculatePointsDistance(event);
-                    float scale = curDistance / downDistance;
-                    downDistance = curDistance;
+                    float scale = curDistance / mDownDistance;
+                    mDownDistance = curDistance;
                     processScale(scale);
                     // 旋转
                     float curDegree = calculatePointerRotationDegree(event);
-                    float degree = curDegree - pointerDegree;
-                    pointerDegree = curDegree;
+                    float degree = curDegree - mPointerDegree;
+                    mPointerDegree = curDegree;
                     processRotate(degree);
                 }
                 break;
@@ -831,7 +965,7 @@ public class FlexibleCaptionView extends View {
     private void scaleAndRotate(float curX, float curY) {
         float scale = calculateScale(curX, curY);
         processScale(scale);
-        float degree = calculateRotationDegree(curX, curY, lastX, lastY);
+        float degree = calculateRotationDegree(curX, curY, mLastX, mLastY);
         processRotate(degree);
     }
 
@@ -843,7 +977,7 @@ public class FlexibleCaptionView extends View {
     }
 
     private float calculateScale(float curX, float curY) {
-        double oldRadius = calculateRadius(lastX, lastY);
+        double oldRadius = calculateRadius(mLastX, mLastY);
         double newRadius = calculateRadius(curX, curY);
 
         float scale = 1;
@@ -956,6 +1090,9 @@ public class FlexibleCaptionView extends View {
     }
 
     private void log(String text) {
+        if (!debug) {
+            return;
+        }
         Log.d(TAG, text);
     }
 

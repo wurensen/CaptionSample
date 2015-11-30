@@ -12,13 +12,13 @@ import android.widget.RadioGroup;
 
 /**
  * 新增编辑字幕
- * Created by meitu on 2015/11/26.
+ * Created by wrs on 2015/11/26.
  */
 public class AddEditCaptionAct extends Activity {
 
     public static Typeface[] typefaces = new Typeface[] {Typeface.DEFAULT, Typeface.SANS_SERIF, Typeface.SERIF,
         Typeface.MONOSPACE};
-    public static int[] typefaceStyle = new int[] {Typeface.NORMAL, Typeface.BOLD, Typeface.ITALIC,
+    public static int[] typefaceStyles = new int[] {Typeface.NORMAL, Typeface.BOLD, Typeface.ITALIC,
         Typeface.BOLD_ITALIC};
 
     public static EditText ediTxtCaption;
@@ -27,8 +27,8 @@ public class AddEditCaptionAct extends Activity {
     boolean isAdd;
     float textSize;
     int textColor = Color.BLACK;
-    int typeFaceIndex = 0;
-    int typeFaceStyleIndex = 0;
+    int typefaceIndex = 0;
+    int typefaceStyleIndex = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,51 +99,53 @@ public class AddEditCaptionAct extends Activity {
     public void setCheckedTypeFace(int checkedId) {
         switch (checkedId) {
             case R.id.rdo_btn_typeface_normal:
-                typeFaceIndex = 0;
+                typefaceIndex = 0;
                 break;
             case R.id.rdo_btn_typeface_sans:
-                typeFaceIndex = 1;
+                typefaceIndex = 1;
                 break;
             case R.id.rdo_btn_typeface_serif:
-                typeFaceIndex = 2;
+                typefaceIndex = 2;
                 break;
             case R.id.rdo_btn_typeface_monospace:
-                typeFaceIndex = 3;
+                typefaceIndex = 3;
                 break;
         }
-        ediTxtCaption.setTypeface(typefaces[typeFaceIndex], typefaceStyle[typeFaceStyleIndex]);
+        ediTxtCaption.setTypeface(typefaces[typefaceIndex], typefaceStyles[typefaceStyleIndex]);
     }
 
     public void setCheckedTypeFaceStyle(int checkedId) {
         switch (checkedId) {
             case R.id.rdo_btn_style_normal:
-                typeFaceStyleIndex = 0;
+                typefaceStyleIndex = 0;
                 break;
             case R.id.rdo_btn_style_bold:
-                typeFaceStyleIndex = 1;
+                typefaceStyleIndex = 1;
                 break;
             case R.id.rdo_btn_style_italic:
-                typeFaceStyleIndex = 2;
+                typefaceStyleIndex = 2;
                 break;
             case R.id.rdo_btn_style_bold_italic:
-                typeFaceStyleIndex = 3;
+                typefaceStyleIndex = 3;
                 break;
         }
-        ediTxtCaption.setTypeface(typefaces[typeFaceIndex], typefaceStyle[typeFaceStyleIndex]);
+        ediTxtCaption.setTypeface(typefaces[typefaceIndex], typefaceStyles[typefaceStyleIndex]);
     }
 
     public void finish(View view) {
-        CharSequence caption = ediTxtCaption.getText().toString();
+        String caption = ediTxtCaption.getText().toString();
         if (!TextUtils.isEmpty(caption)) {
             textSize = ediTxtCaption.getTextSize();
             Intent data = new Intent();
-            data.putExtra("", ediTxtCaption.getText());
             data.putExtra("isAdd", isAdd);
-            data.putExtra("caption", caption);
-            data.putExtra("textSize", textSize);
-            data.putExtra("textColor", textColor);
-            data.putExtra("typeFaceIndex", typeFaceIndex);
-            data.putExtra("typeFaceStyleIndex", typeFaceStyleIndex);
+            int textBorderWidth = ediTxtCaption.getWidth();
+            int textColor = ediTxtCaption.getCurrentTextColor();
+            int paddingLeft = ediTxtCaption.getPaddingLeft();
+            int paddingRight = ediTxtCaption.getPaddingRight();
+            int paddingTop = ediTxtCaption.getPaddingTop();
+            int paddingBottom = ediTxtCaption.getPaddingBottom();
+            data.putExtra(CaptionConfig.class.getSimpleName(), new CaptionConfig(caption, textSize, textBorderWidth,
+                textColor, typefaceIndex, typefaceStyleIndex, paddingLeft, paddingRight, paddingTop, paddingBottom));
             setResult(RESULT_OK, data);
             finish();
         }

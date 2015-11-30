@@ -16,7 +16,11 @@
             android:layout_margin="5dp"
             android:background="#eee"
             android:maxLines="5"
-            android:padding="15dp"
+            android:paddingLeft="5dp"
+            android:paddingTop="10dp"
+            android:paddingRight="15dp"
+            android:paddingBottom="20dp"
+            android:typeface="normal"
             android:minWidth="20dp"
             android:textSize="18dp"/>
 
