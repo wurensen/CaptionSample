@@ -5,10 +5,16 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.RadioGroup;
+
+import com.meitu.captionlayout.FlexibleCaptionView;
 
 /**
  * 新增编辑字幕
@@ -23,6 +29,7 @@ public class AddEditCaptionAct extends Activity {
 
     public static EditText ediTxtCaption;
     private RadioGroup rdoGroupColor, rdoGroupTypeFace, rdoGroupStyle;
+    private FrameLayout framePreview;
 
     boolean isAdd;
     float textSize;
@@ -46,6 +53,7 @@ public class AddEditCaptionAct extends Activity {
             ediTxtCaption.setText(caption);
             ediTxtCaption.setSelection(caption.length());
         }
+
     }
 
     private void initView() {
@@ -53,12 +61,59 @@ public class AddEditCaptionAct extends Activity {
         rdoGroupColor = getView(R.id.rdo_group_color);
         rdoGroupTypeFace = getView(R.id.rdo_group_typeface);
         rdoGroupStyle = getView(R.id.rdo_group_style);
+        framePreview = getView(R.id.frame_preview);
+        addCaptionPreviewView();
+    }
+
+    private FlexibleCaptionView captionPreview;
+
+    private void addCaptionPreviewView() {
+        String text = ediTxtCaption.getText().toString();
+        if (TextUtils.isEmpty(text)) {
+            text = ediTxtCaption.getHint().toString();
+        }
+        Typeface typeface =
+                Typeface.create(AddEditCaptionAct.typefaces[typefaceIndex],
+                        AddEditCaptionAct.typefaceStyles[typefaceStyleIndex]);
+         captionPreview =
+                FlexibleCaptionView.Builder.create(this)
+                        .text(text)
+                        .textSize(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getTextSize())
+                        .textColor(ediTxtCaption.getCurrentTextColor())
+                        .textTypeface(typeface)
+                        .paddingLeft(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingLeft())
+                        .paddingRight(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingRight())
+                        .paddingTop(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingTop())
+                        .paddingBottom(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingBottom())
+                        .textBorderColor(Color.BLACK)
+                        .build();
+        captionPreview.setDebug(true);
+        framePreview.addView(captionPreview);
     }
 
     private void registerMonitor() {
         rdoGroupColor.setOnCheckedChangeListener(checkedChangeListener);
         rdoGroupTypeFace.setOnCheckedChangeListener(checkedChangeListener);
         rdoGroupStyle.setOnCheckedChangeListener(checkedChangeListener);
+        ediTxtCaption.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String text = s.toString();
+                if (s.length() == 0) {
+                    text = ediTxtCaption.getHint().toString();
+                }
+                captionPreview.setText(text);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
     }
 
     private RadioGroup.OnCheckedChangeListener checkedChangeListener = new RadioGroup.OnCheckedChangeListener() {
@@ -94,6 +149,7 @@ public class AddEditCaptionAct extends Activity {
                 break;
         }
         ediTxtCaption.setTextColor(textColor);
+        captionPreview.setTextColor(textColor);
     }
 
     public void setCheckedTypeFace(int checkedId) {
@@ -112,6 +168,7 @@ public class AddEditCaptionAct extends Activity {
                 break;
         }
         ediTxtCaption.setTypeface(typefaces[typefaceIndex], typefaceStyles[typefaceStyleIndex]);
+        captionPreview.setTextTypeface(ediTxtCaption.getTypeface());
     }
 
     public void setCheckedTypeFaceStyle(int checkedId) {
@@ -130,6 +187,7 @@ public class AddEditCaptionAct extends Activity {
                 break;
         }
         ediTxtCaption.setTypeface(typefaces[typefaceIndex], typefaceStyles[typefaceStyleIndex]);
+        captionPreview.setTextTypeface(ediTxtCaption.getTypeface());
     }
 
     public void finish(View view) {

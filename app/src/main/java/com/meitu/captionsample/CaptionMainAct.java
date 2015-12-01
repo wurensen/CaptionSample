@@ -129,8 +129,8 @@ public class CaptionMainAct extends Activity {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
             captionView.setText(config.text);
-            captionView.setTextBorderWidth(config.textBorderWidth);
-            captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, config.textSize);
+//            captionView.setTextBorderWidth(config.textBorderWidth);
+//            captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, config.textSize);
             captionView.setTextColor(config.textColor);
             Typeface typeface =
                 Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
