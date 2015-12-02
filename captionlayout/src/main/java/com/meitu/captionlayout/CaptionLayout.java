@@ -114,7 +114,6 @@ public class CaptionLayout extends FrameLayout {
      * @param captionView 字幕控件
      */
     public void addCaptionView(FlexibleCaptionView captionView) {
-        clearChildrenFocus();
         addView(captionView);
     }
 
@@ -128,14 +127,15 @@ public class CaptionLayout extends FrameLayout {
 
     /**
      * @return 获取所有字幕控件的信息
+     * @param scale 导出的目标相对于字幕的倍数
      */
-    public ArrayList<CaptionInfo> findAllCaptionInfos() {
+    public ArrayList<CaptionInfo> findAllCaptionInfos(float scale) {
         ArrayList<CaptionInfo> captionInfos = new ArrayList<>();
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             if (child instanceof FlexibleCaptionView) {
                 FlexibleCaptionView captionView = (FlexibleCaptionView) child;
-                captionInfos.add(captionView.getCurrentCaption(1));
+                captionInfos.add(captionView.exportCaptionInfo(scale));
             }
         }
         return captionInfos;

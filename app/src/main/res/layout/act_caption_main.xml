@@ -16,13 +16,13 @@
             android:id="@+id/captionView1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            app:borderColor="#ff6200"
             app:leftTopIcon="@android:drawable/ic_delete"
             app:rightBottomIcon="@android:drawable/ic_menu_crop"
             app:rightTopIcon="@android:drawable/checkbox_on_background"
             app:text="用布局添加的字幕"
             app:textColor="#00aaff"
             app:textPadding="5dp"
-            app:borderColor="#ff6200"
             app:textSize="30dp"/>
 
     </com.meitu.captionlayout.CaptionLayout>
@@ -35,21 +35,35 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="5dp"
-            android:onClick="add"
+            android:onClick="addCaption"
             android:text="新增字幕"/>
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginRight="5dp"
+            android:onClick="addImgCaption"
+            android:text="新增贴图"/>
+
+<!--        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="5dp"
             android:onClick="edit"
-            android:text="修改选中字幕"/>
+            android:text="修改选中字幕"/>-->
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginRight="5dp"
             android:onClick="export"
             android:text="导出选中字幕"/>
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="importCaption"
+            android:text="导入字幕"/>
 
     </LinearLayout>
 
