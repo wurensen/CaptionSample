@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -80,14 +81,16 @@ public class AddEditCaptionAct extends Activity {
                         .text(text)
                         .textSize(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getTextSize())
                         .textColor(ediTxtCaption.getCurrentTextColor())
+                        .textBorderColor(Color.BLACK)
                         .textTypeface(typeface)
+                        .layoutTextAlignment(Layout.Alignment.ALIGN_CENTER)
                         .paddingLeft(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingLeft())
                         .paddingRight(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingRight())
                         .paddingTop(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingTop())
                         .paddingBottom(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingBottom())
-                        .textBorderColor(Color.BLACK)
                         .build();
         captionPreview.setDebug(true);
+//        captionPreview.setText(text);
         framePreview.addView(captionPreview);
     }
 
@@ -196,7 +199,7 @@ public class AddEditCaptionAct extends Activity {
             textSize = ediTxtCaption.getTextSize();
             Intent data = new Intent();
             data.putExtra("isAdd", isAdd);
-            int textBorderWidth = ediTxtCaption.getWidth();
+            int textBorderWidth = captionPreview.getTextBorderWidth();
             int textColor = ediTxtCaption.getCurrentTextColor();
             int paddingLeft = ediTxtCaption.getPaddingLeft();
             int paddingRight = ediTxtCaption.getPaddingRight();

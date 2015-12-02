@@ -14,7 +14,7 @@ import android.widget.TextView;
 import com.meitu.captionlayout.CaptionInfo;
 import com.meitu.captionlayout.CaptionLayout;
 import com.meitu.captionlayout.FlexibleCaptionView;
-
+import com.meitu.captionlayout.FlexibleCaptionView.OnCaptionClickListener;
 
 public class CaptionMainAct extends Activity {
 
@@ -33,10 +33,33 @@ public class CaptionMainAct extends Activity {
 
     private void initView() {
         captionLayoutContainer = getView(R.id.captionLayout_container);
-        // captionView1 = getView(R.id.captionView1);
+        captionView1 = getView(R.id.captionView1);
         imgViewShow = getView(R.id.imgView_show);
         labelExportInfo = getView(R.id.label_export_info);
+
+        registerMonitor();
     }
+
+    private void registerMonitor() {
+        captionView1.setOnCaptionClickListener(onCaptionClickListener);
+        captionLayoutContainer.setOnCaptionFocusChangeListener(new CaptionLayout.OnCaptionFocusChangeListener() {
+            @Override
+            public void onCaptionFocusChange(CaptionLayout captionLayout, FlexibleCaptionView lastFocusCaptionView,
+                FlexibleCaptionView curFocusCaptionView) {
+                CharSequence lastText = lastFocusCaptionView != null ? lastFocusCaptionView.getText() : null;
+                CharSequence curText = curFocusCaptionView != null ? curFocusCaptionView.getText() : null;
+                Log.e("Flex", "onCaptionFocusChange...lastFocusCaptionView=" + lastText + ",curFocusCaptionView="
+                    + curText);
+            }
+        });
+    }
+
+    private OnCaptionClickListener onCaptionClickListener = new OnCaptionClickListener() {
+        @Override
+        public void onClick(View v) {
+            edit(v);
+        }
+    };
 
     private <T extends View> T getView(int id) {
         return (T) findViewById(id);
@@ -56,7 +79,7 @@ public class CaptionMainAct extends Activity {
     public void export(View view) {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
-            CaptionInfo captionInfo = captionView.getCurrentCaption();
+            CaptionInfo captionInfo = captionView.getCurrentCaption(0.5f);
             Log.w("", captionInfo.toString());
             imgViewShow.setImageBitmap(captionInfo.bitmap);
             labelExportInfo.setText("locationRect=" + captionInfo.locationRect.toShortString() + ",degree="
@@ -122,6 +145,7 @@ public class CaptionMainAct extends Activity {
                 .iconSize(TypedValue.COMPLEX_UNIT_DIP, 35)
                 .textBorderColor(Color.MAGENTA)
                 .build();
+        addCaptionView.setOnCaptionClickListener(onCaptionClickListener);
         captionLayoutContainer.addCaptionView(addCaptionView);
     }
 
@@ -129,8 +153,8 @@ public class CaptionMainAct extends Activity {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
             captionView.setText(config.text);
-//            captionView.setTextBorderWidth(config.textBorderWidth);
-//            captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, config.textSize);
+            // captionView.setTextBorderWidth(config.textBorderWidth);
+            // captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, config.textSize);
             captionView.setTextColor(config.textColor);
             Typeface typeface =
                 Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],

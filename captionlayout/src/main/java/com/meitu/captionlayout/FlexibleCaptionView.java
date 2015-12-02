@@ -23,6 +23,7 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.EditText;
 
@@ -40,6 +41,14 @@ public class FlexibleCaptionView extends View {
      * 支持的最大字体大小，单位像素
      */
     private static final int MAX_TEXT_SIZE = 200;
+    /**
+     * 水平或竖直方向的偏移角度范围
+     */
+    private static final float OFFSET_DEGREE = 10f;
+    /**
+     * 点击事件触发的超时时间
+     */
+    private static final int CLICK_TIMEOUT = ViewConfiguration.getTapTimeout();
     private boolean debug;
 
     private Matrix mUpdateMatrix = new Matrix(); // 变化矩阵，用来获取最新的点
@@ -73,8 +82,9 @@ public class FlexibleCaptionView extends View {
     private int mTextBorderWidth; // 文字的边界宽度，和padding一起决定换行宽度
     private int mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
     private int mTextBorderHeight;
-    private Layout.Alignment mTextAlignment = Layout.Alignment.ALIGN_NORMAL;
+    private Layout.Alignment mLayoutTextAlignment = Layout.Alignment.ALIGN_CENTER;
     private PointF mInitTextStartPoint = new PointF();
+    private float[] mUpdateTextStartPoint = new float[2];
     private StaticLayout mTextLayout;
 
     private TouchRegion mTouchRegion; // 触摸的区域
@@ -84,8 +94,12 @@ public class FlexibleCaptionView extends View {
     private float mTotalScale;
     private float mMaxScale;
     private float mTotalDegree;
-    private boolean mNeverDraw = true;
-    private boolean mReInit = true; // 是否需要重新初始化
+    private boolean mFirstDraw = true;
+    private boolean mResetData = true; // 是否需要重置数据
+    private boolean mUpdateCurrent = true; // 是否基于当前的位置更新
+
+    private OnCaptionClickListener mOnCaptionClickListener;
+    private boolean mJustGetFocus; // 刚获取焦点
 
     public FlexibleCaptionView(Context context) {
         this(context, null);
@@ -123,9 +137,11 @@ public class FlexibleCaptionView extends View {
         mPaddingBottom =
             typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textPaddingBottom, mPaddingBottom);
 
+        // 未设定边框宽度且未设定文本内容，后续绘制将会以父控件的宽度为参考作为边框宽度
+        int defaultBorderWidth =
+            mText.length() == 0 ? 0 : (int) (mTextSize * mText.length() + mPaddingLeft + mPaddingRight);
         mTextBorderWidth =
-            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textBorderWidth,
-                (int) (mTextSize * mText.length() + mPaddingLeft + mPaddingRight));
+            typedArray.getDimensionPixelSize(R.styleable.FlexibleCaptionView_textBorderWidth, defaultBorderWidth);
 
         mBorderColor = typedArray.getColor(R.styleable.FlexibleCaptionView_borderColor, Color.GRAY);
 
@@ -177,6 +193,7 @@ public class FlexibleCaptionView extends View {
         private Integer mTextBorderWidth;
         private Integer mTextBorderColor;
         private Typeface mTextTypeface;
+        private Layout.Alignment mLayoutTextAlignment;
         private Integer mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
         private Bitmap mLeftTopIconBmp, mRightTopIconBmp, mRightBottomIconBmp;
         private Integer mIconSize;
@@ -236,6 +253,11 @@ public class FlexibleCaptionView extends View {
             return this;
         }
 
+        public Builder layoutTextAlignment(Layout.Alignment textAlignment) {
+            mLayoutTextAlignment = textAlignment;
+            return this;
+        }
+
         public Builder padding(int unit, int value) {
             mPaddingLeft = mPaddingRight = mPaddingTop = mPaddingBottom = (int) convert2px(mContext, unit, value);
             return this;
@@ -285,23 +307,33 @@ public class FlexibleCaptionView extends View {
             view.mTextColor = mTextColor == null ? view.mTextColor : mTextColor;
             view.mBorderColor = mTextBorderColor == null ? view.mBorderColor : mTextBorderColor;
             view.mTextTypeface = mTextTypeface == null ? view.mTextTypeface : mTextTypeface;
+            view.mLayoutTextAlignment = mLayoutTextAlignment == null ? view.mLayoutTextAlignment : mLayoutTextAlignment;
 
             view.mPaddingLeft = mPaddingLeft == null ? view.mPaddingLeft : mPaddingLeft;
             view.mPaddingRight = mPaddingRight == null ? view.mPaddingRight : mPaddingRight;
             view.mPaddingTop = mPaddingTop == null ? view.mPaddingTop : mPaddingTop;
             view.mPaddingBottom = mPaddingBottom == null ? view.mPaddingBottom : mPaddingBottom;
-            view.mTextBorderWidth =
-                mTextBorderWidth == null ? (int) (view.mText.length() * view.mTextSize + view.mPaddingLeft + view.mPaddingRight)
-                    : mTextBorderWidth;
+
+            int defaultBorderWidth =
+                view.mText.length() == 0 ? 0
+                    : (int) (view.mText.length() * view.mTextSize + view.mPaddingLeft + view.mPaddingRight);
+            view.mTextBorderWidth = mTextBorderWidth == null ? defaultBorderWidth : mTextBorderWidth;
 
             view.mLeftTopBmp = mLeftTopIconBmp;
             view.mRightTopBmp = mRightTopIconBmp;
             view.mRightBottomBmp = mRightBottomIconBmp;
             view.mIconSize = mIconSize == null ? view.mIconSize : mIconSize;
-            view.refresh(true);
+            view.refresh(true, true);
             return view;
         }
+    }
 
+    public OnCaptionClickListener getOnCaptionClickListener() {
+        return mOnCaptionClickListener;
+    }
+
+    public void setOnCaptionClickListener(OnCaptionClickListener mCaptionClickListener) {
+        this.mOnCaptionClickListener = mCaptionClickListener;
     }
 
     /**
@@ -320,6 +352,24 @@ public class FlexibleCaptionView extends View {
     }
 
     /**
+     * @return 获取字幕内容对齐方式
+     */
+    public Layout.Alignment getLayoutTextAlignment() {
+        return mLayoutTextAlignment;
+    }
+
+    /**
+     * 设置字幕对齐方式
+     * @param textAlignment 对齐方式
+     */
+    public void setLayoutTextAlignment(Layout.Alignment textAlignment) {
+        if (textAlignment != null) {
+            this.mLayoutTextAlignment = textAlignment;
+        }
+        refresh(false, true);
+    }
+
+    /**
      * 设置字体
      *
      * @param typeface 字体
@@ -327,7 +377,7 @@ public class FlexibleCaptionView extends View {
     public void setTextTypeface(Typeface typeface) {
         this.mTextTypeface = typeface;
         mTextPaint.setTypeface(mTextTypeface);
-        refresh(true);
+        refresh(false, true);
     }
 
     /**
@@ -344,7 +394,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setText(CharSequence text) {
         this.mText = text;
-        refresh(true);
+        refresh(false, true);
     }
 
     /**
@@ -369,7 +419,7 @@ public class FlexibleCaptionView extends View {
     public void setTextColor(int textColor) {
         this.mTextColor = textColor;
         mTextPaint.setColor(textColor);
-        refresh(false);
+        refresh(false, false);
     }
 
     /**
@@ -393,7 +443,7 @@ public class FlexibleCaptionView extends View {
         float textSize = convert2px(getContext(), unit, value);
         this.mTextSize = textSize > MAX_TEXT_SIZE ? MAX_TEXT_SIZE : textSize;
         mTextPaint.setTextSize(textSize);
-        refresh(true);
+        refresh(true, true);
     }
 
     /**
@@ -409,7 +459,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setTextBorderWidth(int mTextBorderWidth) {
         this.mTextBorderWidth = mTextBorderWidth;
-        refresh(true);
+        refresh(true, true);
     }
 
     /**
@@ -419,7 +469,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setPadding(int unit, float value) {
         mPaddingLeft = mPaddingRight = mPaddingTop = mPaddingBottom = (int) convert2px(getContext(), unit, value);
-        refresh(true);
+        refresh(true, true);
     }
 
     /**
@@ -435,6 +485,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setPaddingLeft(int mPaddingLeft) {
         this.mPaddingLeft = mPaddingLeft;
+        refresh(true, true);
     }
 
     /**
@@ -450,6 +501,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setPaddingRight(int mPaddingRight) {
         this.mPaddingRight = mPaddingRight;
+        refresh(true, true);
     }
 
     /**
@@ -465,6 +517,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setPaddingTop(int mPaddingTop) {
         this.mPaddingTop = mPaddingTop;
+        refresh(true, true);
     }
 
     /**
@@ -480,6 +533,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setPaddingBottom(int mPaddingBottom) {
         this.mPaddingBottom = mPaddingBottom;
+        refresh(true, true);
     }
 
     /**
@@ -497,7 +551,7 @@ public class FlexibleCaptionView extends View {
     public void setBorderColor(int borderColor) {
         this.mBorderColor = borderColor;
         mBorderPaint.setColor(borderColor);
-        refresh(false);
+        refresh(false, false);
     }
 
     /**
@@ -514,7 +568,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setIconSizePx(int iconSize) {
         this.mIconSize = iconSize;
-        refresh(false);
+        refresh(false, true);
     }
 
     /**
@@ -537,7 +591,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setLeftTopIcon(Bitmap bitmap) {
         this.mLeftTopBmp = bitmap;
-        refresh(false);
+        refresh(false, false);
     }
 
     /**
@@ -560,7 +614,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setRightTopIcon(Bitmap bitmap) {
         this.mRightTopBmp = bitmap;
-        refresh(false);
+        refresh(false, false);
     }
 
     /**
@@ -583,7 +637,7 @@ public class FlexibleCaptionView extends View {
      */
     public void setRightBottomIcon(Bitmap bitmap) {
         this.mRightBottomBmp = bitmap;
-        refresh(false);
+        refresh(false, false);
     }
 
     /**
@@ -611,46 +665,82 @@ public class FlexibleCaptionView extends View {
         if (this.mFocus == focus) {
             return;
         }
+        // 刚获得焦点，不允许点击事件
+        mJustGetFocus = focus;
         this.mFocus = focus;
-        refresh(false);
+        // 焦点变更，通知
+        notifyParentFocusChange(focus);
+        refresh(false, false);
+    }
+
+    private void notifyParentFocusChange(boolean focus) {
+        if (getParent() instanceof CaptionLayout) {
+            CaptionLayout captionLayout = (CaptionLayout) getParent();
+            captionLayout.updateCaptionFocusChangeView(this, focus);
+        }
     }
 
     /**
+     * @param scale 缩放后的目标比例
      * @return 获取字幕信息
      */
-    public CaptionInfo getCurrentCaption() {
-        return buildCurrentCaptionInfo();
+    public CaptionInfo getCurrentCaption(float scale) {
+        return buildCurrentCaptionInfo(scale);
     }
 
-    private CaptionInfo buildCurrentCaptionInfo() {
-        // TODO: 2015/12/1 映射到目标大小的坐标系
-        // 暂时摆正
-        mUpdateMatrix.postRotate(-mTotalDegree, mCenterPoint.x, mCenterPoint.y);
+    private Matrix mExportMatrix = new Matrix();
+
+    private CaptionInfo buildCurrentCaptionInfo(float scale) {
+        mExportMatrix.set(mUpdateMatrix);
+        // 摆正
+        mExportMatrix.postRotate(-mTotalDegree, mCenterPoint.x, mCenterPoint.y);
+        // 缩放到目标
+        mExportMatrix.postScale(scale, scale, getWidth() * 1.0f / 2, getHeight() * 1.0f / 2);
+        // 移动原点
+        mExportMatrix.postTranslate(-(getWidth() - getWidth() * scale) / 2, -(getHeight() - getHeight() * scale) / 2);
+        // 获取映射后矩形的位置信息
         RectF dst = new RectF();
-        mUpdateMatrix.mapRect(dst, mBorderRect);
+        mExportMatrix.mapRect(dst, mBorderRect);
         Rect locationRect = new Rect((int) dst.left, (int) dst.top, (int) dst.right, (int) dst.bottom);
-        // 更新摆正后要写字的起始点
-        float[] curTextStartPoint = new float[2];
-        mUpdateMatrix.mapPoints(curTextStartPoint, new float[] {mInitTextStartPoint.x, mInitTextStartPoint.y});
-        // 恢复位置
-        mUpdateMatrix.postRotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
         // 创建字幕图层
         Bitmap textBitmap = Bitmap.createBitmap(locationRect.width(), locationRect.height(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(textBitmap);
-        canvas.translate(mPaddingLeft * mTotalScale, mPaddingTop * mTotalScale);
-        // int breakWidth = (int) mTextPaint.measureText(mMaxWidthLineText, 0, mMaxWidthLineText.length());
-        mTextLayout = new StaticLayout(mText, mTextPaint, Integer.MAX_VALUE, mTextAlignment, 1.0f, 0f, false);
+        float scalePaddingLeft = mPaddingLeft * mTotalScale * scale;
+        float scalePaddingTop = mPaddingTop * mTotalScale * scale;
+        float scalePaddingRight = mPaddingRight * mTotalScale * scale;
+        float dx = 0, dy = scalePaddingTop;
+        switch (mLayoutTextAlignment) {
+            case ALIGN_NORMAL:
+                dx = scalePaddingLeft;
+                break;
+            case ALIGN_OPPOSITE:
+                dx = -scalePaddingRight;
+                break;
+            default:
+                break;
+        }
+        canvas.translate(dx, dy);
+        int breakWidth = (int) (mTextBorderWidth * mTotalScale * scale);
+        mTextPaint.setTextSize(mTextPaint.getTextSize() * scale);
+        mTextLayout = new StaticLayout(mText, mTextPaint, breakWidth, mLayoutTextAlignment, 1.0f, 0f, false);
         mTextLayout.draw(canvas);
+        mTextPaint.setTextSize(mTextPaint.getTextSize() / scale);
         return new CaptionInfo(textBitmap, locationRect, mTotalDegree);
     }
 
     /**
      * 重绘控件
      *
-     * @param reInit 内部是否需要重新初始化数据
+     * @param reset 内部是否需要重置初始化数据
+     * @param update 基于当前状态更新信息
      */
-    private void refresh(boolean reInit) {
-        this.mReInit = reInit;
+    private void refresh(boolean reset, boolean update) {
+        if (reset) {
+            this.mResetData = reset;
+        }
+        if (update) {
+            this.mUpdateCurrent = update;
+        }
         postInvalidate();
     }
 
@@ -667,6 +757,7 @@ public class FlexibleCaptionView extends View {
             measureWidth = mTextBorderWidth <= 0 ? widthSize : mTextBorderWidth;
         }
         if (heightMode != MeasureSpec.EXACTLY) {
+            // 未指定高度，与宽度一样
             measureHeight = measureWidth;
         }
         log("measureWidth=" + measureWidth + ",measureHeight=" + measureHeight);
@@ -702,10 +793,14 @@ public class FlexibleCaptionView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         // log("onDraw");
-        if (mNeverDraw || mReInit) {
+        if (mFirstDraw || mResetData) {
             init();
-            mNeverDraw = false;
-            mReInit = false;
+            mFirstDraw = false;
+            mResetData = false;
+        }
+        if (mUpdateCurrent) {
+            updateDataBaseOnCurrent();
+            mUpdateCurrent = false;
         }
         drawText(canvas);
         if (mFocus) {
@@ -714,23 +809,20 @@ public class FlexibleCaptionView extends View {
         }
     }
 
-    private float mInitTextSize;
-
     private void init() {
         log("init");
-        if (mNeverDraw) {
-            mInitTextSize = mTextSize;
-            mUpdateMatrix.reset();
-            mTextPaint.setTextSize(mTextSize);
-            mTextPaint.setColor(mTextColor);
-            mTextPaint.setTypeface(mTextTypeface);
+        mUpdateMatrix.reset();
+        mTextPaint.setTextSize(mTextSize);
+        mTextPaint.setColor(mTextColor);
+        mTextPaint.setTypeface(mTextTypeface);
 
-            mBorderPaint.setColor(mBorderColor);
+        mBorderPaint.setColor(mBorderColor);
 
-            mTotalScale = 1f;
-            mTotalDegree = 0f;
-        }
+        mTotalScale = 1f;
+        mTotalDegree = 0f;
+    }
 
+    private void updateDataBaseOnCurrent() {
         initBorderRect();
         updateBorderVertexData();
         updateCornerLocationData();
@@ -740,15 +832,15 @@ public class FlexibleCaptionView extends View {
         // 摆正
         mUpdateMatrix.postRotate(-mTotalDegree, mCenterPoint.x, mCenterPoint.y);
         // 更新摆正后要写字的起始点
-        float[] dst = new float[2];
-        mUpdateMatrix.mapPoints(dst, new float[] {mInitTextStartPoint.x, mInitTextStartPoint.y});
+        mUpdateMatrix.mapPoints(mUpdateTextStartPoint, new float[] {mInitTextStartPoint.x, mInitTextStartPoint.y});
         canvas.save();
         // 旋转画布
         canvas.rotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
-        canvas.translate(dst[0], dst[1]);
+        canvas.translate(mUpdateTextStartPoint[0], mUpdateTextStartPoint[1]);
         // 根据最宽一行测量出宽度用来切割
         // int breakWidth = (int) mTextPaint.measureText(mMaxWidthLineText, 0, mMaxWidthLineText.length());
-        mTextLayout = new StaticLayout(mText, mTextPaint, Integer.MAX_VALUE, mTextAlignment, 1.0f, 0f, false);
+        int breakWidth = (int) (mTextBorderWidth * mTotalScale);
+        mTextLayout = new StaticLayout(mText, mTextPaint, breakWidth, mLayoutTextAlignment, 1.0f, 0f, false);
         mTextLayout.draw(canvas);
         canvas.restore();
         // 恢复矩阵的改变
@@ -779,46 +871,59 @@ public class FlexibleCaptionView extends View {
 
     private void initBorderRect() {
         if (mTextBorderWidth <= 0) {
-            mTextBorderWidth = getWidth();
+            // 未设定边框宽度
+            mTextBorderWidth = getWidth() - 10;
         }
-        float availableTextWidth = mTextBorderWidth - mPaddingLeft - mPaddingRight;
-        float availableTextHeight = getHeight() - mPaddingTop - mPaddingBottom;
+        float availableTextWidth =
+            Math.min(mTextBorderWidth - mPaddingLeft - mPaddingRight, getWidth() - mPaddingLeft - mPaddingRight);
+        float availableTextHeight =
+            Math.min(mTextBorderWidth - mPaddingTop - mPaddingBottom, getHeight() - mPaddingTop - mPaddingBottom);
         // 如果需要，调整字体大小以便边框能够容纳下内容
         adjustTextSizeToFitBorder(availableTextWidth, availableTextHeight);
         // 确定边框高度
         mTextBorderHeight = mTextLayout.getHeight() + mPaddingTop + mPaddingBottom;
-        // TODO: 2015/12/1 调整与预览框同比例
+        // 获取最大放大比例
         mMaxScale = Math.min(getWidth() * 1.0f / mTextBorderWidth, getHeight() * 1.0f / mTextBorderHeight);
-        if (mTotalScale > mMaxScale) {
-            mTotalScale = mMaxScale;
-            mUpdateMatrix.postScale(1f, mMaxScale / mTotalScale, mCenterPoint.x, mCenterPoint.y);
-            updateTextPaint();
-            updateLocationDataAndRefresh();
-        }
         float rectLeft = (getWidth() - mTextBorderWidth) / 2;
         float rectRight = rectLeft + mTextBorderWidth;
         float rectTop = (getHeight() - mTextBorderHeight) / 2;
         float rectBottom = rectTop + mTextBorderHeight;
         mBorderRect.set(rectLeft, rectTop, rectRight, rectBottom);
-        mInitTextStartPoint.set(rectLeft + mPaddingLeft, rectTop + mPaddingTop);
+
+        determineTextStartPoint();
+    }
+
+    private void determineTextStartPoint() {
+        switch (mLayoutTextAlignment) {
+            case ALIGN_NORMAL:
+                mInitTextStartPoint.set(mBorderRect.left + mPaddingLeft, mBorderRect.top + mPaddingTop);
+                break;
+            case ALIGN_OPPOSITE:
+                mInitTextStartPoint.set(mBorderRect.left - mPaddingRight, mBorderRect.top + mPaddingTop);
+                break;
+            default:
+                mInitTextStartPoint.set(mBorderRect.left, mBorderRect.top + mPaddingTop);
+                break;
+        }
     }
 
     private void adjustTextSizeToFitBorder(float availableTextWidth, float availableTextHeight) {
         // 用初始字体大小来调整
-        mTextPaint.setTextSize(mInitTextSize);
+        mTextPaint.setTextSize(mTextSize);
         while (true) {
-            mTextLayout = new StaticLayout(mText, mTextPaint, Integer.MAX_VALUE, mTextAlignment, 1.0f, 0f, false);
+            mTextLayout =
+                new StaticLayout(mText, mTextPaint, Integer.MAX_VALUE, Layout.Alignment.ALIGN_CENTER, 1.0f, 0f, false);
             // 获取需要缩小倍数
             float resizeScale = getResizeScale(mTextLayout, availableTextWidth, availableTextHeight);
             if (resizeScale < 1) {
-                mTextSize = mTextPaint.getTextSize() * resizeScale;
-                mTextPaint.setTextSize(mTextSize);
+                // mTextSize = mTextPaint.getTextSize() * resizeScale;
+                mTextPaint.setTextSize(mTextPaint.getTextSize() * resizeScale);
             } else {
                 break;
             }
         }
         // 恢复当前显示的字体大小
-        mTextPaint.setTextSize(mTextSize * mTotalScale);
+        mTextPaint.setTextSize(mTextPaint.getTextSize() * mTotalScale);
     }
 
     private float getResizeScale(StaticLayout mTextLayout, float availableTextWidth, float availableTextHeight) {
@@ -917,6 +1022,14 @@ public class FlexibleCaptionView extends View {
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
+                if (!mJustGetFocus && mTouchRegion == TouchRegion.INSIDE) {
+                    log("event.getDownTime()=" + (event.getEventTime() - event.getDownTime()));
+                    long clickTimeout = event.getEventTime() - event.getDownTime();
+                    if (clickTimeout <= CLICK_TIMEOUT && mOnCaptionClickListener != null) {
+                        mOnCaptionClickListener.onClick(this);
+                    }
+                }
+                mJustGetFocus = false;
                 adjustRotateIfNeed();
                 mTouchMode = TouchMode.NONE;
                 mStillDownPointId = 0;
@@ -929,7 +1042,7 @@ public class FlexibleCaptionView extends View {
 
     private void adjustRotateIfNeed() {
         if (mTouchRegion == TouchRegion.INSIDE || mTouchRegion == TouchRegion.RIGHT_BOTTOM_ICON) {
-            float adjustDegree = adjustDegreeToHorizontalOrVertical(mTotalDegree, 10f);
+            float adjustDegree = adjustDegreeToHorizontalOrVertical(mTotalDegree, OFFSET_DEGREE);
             mUpdateMatrix.postRotate(adjustDegree - mTotalDegree, mCenterPoint.x, mCenterPoint.y);
             updateLocationDataAndRefresh();
             mTotalDegree = adjustDegree;
@@ -958,7 +1071,7 @@ public class FlexibleCaptionView extends View {
         if (getParent() instanceof CaptionLayout) {
             CaptionLayout captionLayout = (CaptionLayout) getParent();
             // 不处理可能已经由其它控件正在处理的事件
-            if (mTouchMode == TouchMode.NONE && captionLayout.isPointerDown) {
+            if (mTouchMode == TouchMode.NONE && captionLayout.mIsPointerDown) {
                 return true;
             }
         }
@@ -1040,22 +1153,36 @@ public class FlexibleCaptionView extends View {
     // 确定事件点击的区域
     private boolean determineTouchRegion(float curX, float curY) {
         boolean consume = true;
-        setFocus(true);
         if (mRightBottomBmp != null && mCurrentRightBottomRect.contains(curX, curY)) {
-            mTouchRegion = TouchRegion.RIGHT_BOTTOM_ICON;
+            if (!needToSetFocusFirstly()) {
+                mTouchRegion = TouchRegion.RIGHT_BOTTOM_ICON;
+            }
         } else if (mLeftTopBmp != null && mCurrentLeftTopIconRect.contains(curX, curY)) {
-            mTouchRegion = TouchRegion.LEFT_TOP_ICON;
-            ((ViewGroup) getParent()).removeView(this);
+            if (!needToSetFocusFirstly()) {
+                mTouchRegion = TouchRegion.LEFT_TOP_ICON;
+                ((ViewGroup) getParent()).removeView(this);
+            }
         } else if (isInBorderRegion(curX, curY)) {
-            // 内容与角落重叠区域相应角落事件
-            mTouchRegion = TouchRegion.INSIDE;
+            if (!needToSetFocusFirstly()) {
+                // 内容与角落重叠区域响应角落事件
+                mTouchRegion = TouchRegion.INSIDE;
+            }
         } else {
+            setFocus(false);
             mTouchRegion = TouchRegion.OUTSIDE;
             consume = false;
-            setFocus(false);
         }
         log("determineTouchRegion,curX=" + curX + ",curY=" + curY + ",mTouchRegion=" + mTouchRegion.name());
         return consume;
+    }
+
+    private boolean needToSetFocusFirstly() {
+        if (!mFocus) {
+            setFocus(true);
+            mTouchRegion = TouchRegion.INSIDE;
+            return true;
+        }
+        return false;
     }
 
     // 判断触摸点是否在边框区域内
@@ -1096,7 +1223,7 @@ public class FlexibleCaptionView extends View {
         }
         this.mTotalScale *= scale;
         mUpdateMatrix.postScale(scale, scale, mCenterPoint.x, mCenterPoint.y);
-        updateTextPaint();
+        updateTextPaint(scale);
         updateLocationDataAndRefresh();
     }
 
@@ -1110,8 +1237,8 @@ public class FlexibleCaptionView extends View {
     }
 
     // 字体相关参数改变
-    private void updateTextPaint() {
-        mTextPaint.setTextSize(mTextSize * mTotalScale);
+    private void updateTextPaint(float scale) {
+        mTextPaint.setTextSize(mTextPaint.getTextSize() * scale);
     }
 
     // 更新位置信息并重绘控件
@@ -1165,5 +1292,16 @@ public class FlexibleCaptionView extends View {
      */
     enum TouchRegion {
         LEFT_TOP_ICON, RIGHT_BOTTOM_ICON, INSIDE, OUTSIDE
+    }
+
+    /**
+     * 字幕点击监听器
+     */
+    public interface OnCaptionClickListener {
+        /**
+         * 字幕控件被点击时调用
+         * @param v
+         */
+        void onClick(View v);
     }
 }
