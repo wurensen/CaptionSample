@@ -91,7 +91,6 @@ public class CaptionMainAct extends Activity {
         FlexibleCaptionView captionView = captionLayoutContainer.getCurrentFocusCaptionView();
         if (captionView != null) {
             captionInfo = captionView.exportCaptionInfo(0.5f);
-            Log.w("", captionInfo.toString());
             imgViewShow.setImageBitmap(captionInfo.captionBitmap);
             String info = "locationRect=" + captionInfo.locationRect.toShortString() + ",degree="
                     + captionInfo.degree;
@@ -112,7 +111,14 @@ public class CaptionMainAct extends Activity {
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
                         android.R.drawable.ic_menu_crop)
                 .build();
+        captionView.setOnCaptionClickListener(onCaptionClickListener);
         captionLayoutContainer.addCaptionView(captionView);
+    }
+
+    public void clearFocus(View view) {
+        if (captionLayoutContainer.getCurrentFocusCaptionView() != null) {
+            captionLayoutContainer.getCurrentFocusCaptionView().setFocus(false);
+        }
     }
 
     private void intent2EditCaptionAct(boolean isAdd, String caption) {
@@ -128,7 +134,6 @@ public class CaptionMainAct extends Activity {
             boolean isAdd = data.getBooleanExtra("isAdd", true);
             CaptionConfig captionConfig =
                     (CaptionConfig) data.getSerializableExtra(CaptionConfig.class.getSimpleName());
-            Log.d("Flex", captionConfig.toString());
             if (isAdd) {
                 // 1.直接根据EditText的参数来创建字幕
                 // addCaptionWidthEditText();

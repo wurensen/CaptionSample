@@ -74,23 +74,25 @@ public class AddEditCaptionAct extends Activity {
             text = ediTxtCaption.getHint().toString();
         }
         Typeface typeface =
-                Typeface.create(AddEditCaptionAct.typefaces[typefaceIndex],
-                        AddEditCaptionAct.typefaceStyles[typefaceStyleIndex]);
-         captionPreview =
-                FlexibleCaptionView.Builder.create(this)
-                        .text(text)
-                        .textSize(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getTextSize())
-                        .textColor(ediTxtCaption.getCurrentTextColor())
-                        .textBorderColor(Color.BLACK)
-                        .textTypeface(typeface)
-                        .layoutTextAlignment(Layout.Alignment.ALIGN_CENTER)
-                        .paddingLeft(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingLeft())
-                        .paddingRight(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingRight())
-                        .paddingTop(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingTop())
-                        .paddingBottom(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingBottom())
-                        .build();
-        captionPreview.setDebug(true);
-//        captionPreview.setText(text);
+            Typeface.create(AddEditCaptionAct.typefaces[typefaceIndex],
+                AddEditCaptionAct.typefaceStyles[typefaceStyleIndex]);
+        // 没有设置边框宽度textBorderWidth，默认为根据文字的宽度和padding来确定，但最大不会超过（字幕宽度-默认间距）；
+        captionPreview =
+            FlexibleCaptionView.Builder.create(this)
+                .text(text)
+                .textSize(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getTextSize())
+                .textColor(ediTxtCaption.getCurrentTextColor())
+                .textBorderColor(Color.BLACK)
+                .textTypeface(typeface)
+                .layoutTextAlignment(Layout.Alignment.ALIGN_CENTER)
+                .paddingLeft(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingLeft())
+                .paddingRight(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingRight())
+                .paddingTop(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingTop())
+                .paddingBottom(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingBottom())
+                .build();
+        // 屏蔽事件
+        captionPreview.setEnable(false);
+        // captionPreview.setText(text);
         framePreview.addView(captionPreview);
     }
 

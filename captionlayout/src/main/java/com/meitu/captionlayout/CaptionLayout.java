@@ -20,7 +20,8 @@ public class CaptionLayout extends FrameLayout {
     private OnCaptionFocusChangeListener mOnCaptionFocusChangeListener;
     private FlexibleCaptionView mLastFocusCaptionView;
     private FlexibleCaptionView mCurFocusCaptionView;
-    private boolean mFocusChanged, mHasSetLastFocus, mHasSetCurFocus;
+    private ArrayList<FlexibleCaptionView> captionViews;
+    private int mNeedFocusIndex = -1;
 
     public CaptionLayout(Context context) {
         this(context, null);
@@ -32,6 +33,7 @@ public class CaptionLayout extends FrameLayout {
 
     public CaptionLayout(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        captionViews = new ArrayList<>();
     }
 
     public OnCaptionFocusChangeListener getOnCaptionFocusChangeListener() {
@@ -42,37 +44,14 @@ public class CaptionLayout extends FrameLayout {
         this.mOnCaptionFocusChangeListener = onCaptionFocusChangeListener;
     }
 
-    protected void updateCaptionFocusChangeView(FlexibleCaptionView captionView, boolean focus) {
-        if (focus) {
-            mFocusChanged = true;
-            mLastFocusCaptionView = mCurFocusCaptionView;
-            mCurFocusCaptionView = captionView;
-            mHasSetLastFocus = true;
-            mHasSetCurFocus = true;
-            if (mLastFocusCaptionView != null) {
-                mLastFocusCaptionView.setFocus(false);
-            }
-        } else {
-            mFocusChanged = true;
-            mLastFocusCaptionView = captionView;
-            mHasSetLastFocus = true;
-        }
-    }
-
     @Override
     public void addView(View child, int index, ViewGroup.LayoutParams params) {
         super.addView(child, index, params);
         if (child instanceof FlexibleCaptionView) {
             FlexibleCaptionView captionView = (FlexibleCaptionView) child;
+            captionViews.add(captionView);
             if (captionView.getFocus()) {
-                mLastFocusCaptionView = mCurFocusCaptionView;
-                mCurFocusCaptionView = captionView;
-                mHasSetLastFocus = true;
-                mHasSetCurFocus = true;
-                if (mLastFocusCaptionView != null) {
-                    mLastFocusCaptionView.setFocus(false);
-                }
-                mFocusChanged = true;
+                mNeedFocusIndex = captionViews.indexOf(captionView);
                 performCaptionFocusChange();
             }
         }
@@ -81,31 +60,68 @@ public class CaptionLayout extends FrameLayout {
     @Override
     public void removeView(View view) {
         super.removeView(view);
-        if (view == mCurFocusCaptionView) {
-            mCurFocusCaptionView = null;
-            mHasSetCurFocus = true;
-            mFocusChanged = true;
+        if (view instanceof FlexibleCaptionView) {
+            FlexibleCaptionView captionView = (FlexibleCaptionView) view;
+            captionViews.remove(captionView);
+            if (view == mCurFocusCaptionView) {
+                // 当前选中字幕被移除，无选中
+                mCurFocusCaptionView = null;
+                mLastFocusCaptionView = null;
+                notifyCaptionFocusChange();
+            } else if (view == mLastFocusCaptionView) {
+                mLastFocusCaptionView = null;
+            }
+        }
+    }
+
+    protected void markChildFocus(FlexibleCaptionView view) {
+        // 标记选中对象变更
+        mNeedFocusIndex = captionViews.indexOf(view);
+    }
+
+    // 字幕控件focus状态被非点击事件改变，即被主动设置
+    protected void onChildFocusChangeWithoutTouchEvent(FlexibleCaptionView view, boolean focus) {
+        if (focus) {
+            // -> focus
+            mNeedFocusIndex = captionViews.indexOf(view);
             performCaptionFocusChange();
-        } else if (view == mLastFocusCaptionView) {
-            mLastFocusCaptionView = null;
-            mHasSetLastFocus = true;
+        } else {
+            // focus ->
+            mCurFocusCaptionView = null;
+            // 被主动清除焦点，上次焦点置为本身
+            mLastFocusCaptionView = view;
+            notifyCaptionFocusChange();
         }
     }
 
     private void performCaptionFocusChange() {
-        if (mFocusChanged) {
-            if (!mHasSetLastFocus) {
-                mLastFocusCaptionView = null;
+        // 当前无选中
+        if (mCurFocusCaptionView == null) {
+            if (mNeedFocusIndex >= 0) {
+                mCurFocusCaptionView = captionViews.get(mNeedFocusIndex);
+                mCurFocusCaptionView.setFocusFromParent(true);
+                notifyCaptionFocusChange();
             }
-            if (!mHasSetCurFocus) {
-                mCurFocusCaptionView = null;
+        } else {
+            // 当前有选中，且选中发生了改变
+            if (mNeedFocusIndex >= 0 && mCurFocusCaptionView != captionViews.get(mNeedFocusIndex)) {
+                mLastFocusCaptionView = mCurFocusCaptionView;
+                mCurFocusCaptionView = captionViews.get(mNeedFocusIndex);
+                mLastFocusCaptionView.setFocusFromParent(false);
+                mCurFocusCaptionView.setFocus(true);
+                notifyCaptionFocusChange();
             }
-            mHasSetLastFocus = false;
-            mHasSetCurFocus = false;
-            mFocusChanged = false;
-            if (mOnCaptionFocusChangeListener != null) {
-                mOnCaptionFocusChangeListener.onCaptionFocusChange(this, mLastFocusCaptionView, mCurFocusCaptionView);
-            }
+        }
+        mNeedFocusIndex = -1;
+    }
+
+    private void notifyCaptionFocusChange() {
+        // 被主动操作导致的两次焦点一致，清除上一次
+        if (mLastFocusCaptionView == mCurFocusCaptionView) {
+            mLastFocusCaptionView = null;
+        }
+        if (mOnCaptionFocusChangeListener != null) {
+            mOnCaptionFocusChangeListener.onCaptionFocusChange(this, mLastFocusCaptionView, mCurFocusCaptionView);
         }
     }
 
@@ -145,16 +161,7 @@ public class CaptionLayout extends FrameLayout {
      * @return 获取当前操作的字幕控件
      */
     public FlexibleCaptionView getCurrentFocusCaptionView() {
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-            if (child instanceof FlexibleCaptionView) {
-                FlexibleCaptionView captionView = (FlexibleCaptionView) child;
-                if (captionView.getFocus()) {
-                    return captionView;
-                }
-            }
-        }
-        return null;
+        return mCurFocusCaptionView;
     }
 
     @Override
@@ -167,17 +174,6 @@ public class CaptionLayout extends FrameLayout {
             performCaptionFocusChange();
         }
         return consume;
-    }
-
-    private void clearChildrenFocus() {
-        // 去除所有字幕控件的focus状态
-        for (int i = 0; i < getChildCount(); i++) {
-            View child = getChildAt(i);
-            if (child instanceof FlexibleCaptionView) {
-                FlexibleCaptionView captionView = (FlexibleCaptionView) child;
-                captionView.setFocus(false);
-            }
-        }
     }
 
     /**
