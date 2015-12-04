@@ -28,11 +28,11 @@ public class TextCaptionInfo extends CaptionInfo {
     public TextCaptionInfo() {
     }
 
-    public TextCaptionInfo(Bitmap captionBitmap, Rect locationRect, float degree, Matrix updateMatrix, float scale, String
-            text, float textSize, int textColor, int textBorderWidth, int textBorderColor, Typeface textTypeface,
-                           Layout.Alignment textAlignment, int paddingLeft, int paddingRight, int paddingTop, int
-                                   paddingBottom) {
-        super(captionBitmap, locationRect, degree, updateMatrix);
+    public TextCaptionInfo(Bitmap captionBitmap, Rect targetRect, Rect intrinsicRect, float degree,
+        Matrix updateMatrix, float scale, String text, float textSize, int textColor, int textBorderWidth,
+        int textBorderColor, Typeface textTypeface, Layout.Alignment textAlignment, int paddingLeft, int paddingRight,
+        int paddingTop, int paddingBottom) {
+        super(captionBitmap, targetRect, intrinsicRect, degree, updateMatrix);
         this.scale = scale;
         this.text = text;
         this.textSize = textSize;
@@ -49,20 +49,10 @@ public class TextCaptionInfo extends CaptionInfo {
 
     @Override
     public String toString() {
-        return "TextCaptionInfo{" +
-                "updateMatrix=" + updateMatrix.toShortString() +
-                ", scale=" + scale +
-                ", text='" + text + '\'' +
-                ", textSize=" + textSize +
-                ", textColor=" + textColor +
-                ", textBorderWidth=" + textBorderWidth +
-                ", textBorderColor=" + textBorderColor +
-                ", textTypeface=" + textTypeface +
-                ", textAlignment=" + textAlignment +
-                ", paddingLeft=" + paddingLeft +
-                ", paddingRight=" + paddingRight +
-                ", paddingTop=" + paddingTop +
-                ", paddingBottom=" + paddingBottom +
-                '}';
+        return "TextCaptionInfo{" + "updateMatrix=" + updateMatrix.toShortString() + ", scale=" + scale + ", text='"
+            + text + '\'' + ", textSize=" + textSize + ", textColor=" + textColor + ", textBorderWidth="
+            + textBorderWidth + ", textBorderColor=" + textBorderColor + ", textTypeface=" + textTypeface
+            + ", textAlignment=" + textAlignment + ", paddingLeft=" + paddingLeft + ", paddingRight=" + paddingRight
+            + ", paddingTop=" + paddingTop + ", paddingBottom=" + paddingBottom + '}';
     }
 }

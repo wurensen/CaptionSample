@@ -14,9 +14,9 @@ public class ImageCaptionInfo extends CaptionInfo {
     public ImageCaptionInfo() {
     }
 
-    public ImageCaptionInfo(Bitmap captionBitmap, Rect locationRect, float degree, Matrix updateMatrix, Bitmap
-            intrinsicBitmap) {
-        super(captionBitmap, locationRect, degree, updateMatrix);
+    public ImageCaptionInfo(Bitmap captionBitmap, Rect locationRect, Rect intrinsicRect, float degree,
+        Matrix updateMatrix, Bitmap intrinsicBitmap) {
+        super(captionBitmap, locationRect, intrinsicRect, degree, updateMatrix);
         this.intrinsicBitmap = intrinsicBitmap;
     }
 

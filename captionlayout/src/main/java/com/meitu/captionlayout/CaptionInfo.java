@@ -10,28 +10,43 @@ import android.graphics.Rect;
  */
 public abstract class CaptionInfo {
     public Bitmap captionBitmap; // 字幕图片
-    public Rect locationRect; // 字幕的位置信息
+    public Rect targetRect; // 字幕在导出目标的位置信息（不带角度）
+    public Rect intrinsicRect; // 字幕在字幕控件上的位置信息（不带角度）
     public float degree; // 旋转角度，绕矩形中心点旋转
     public Matrix updateMatrix; // 导出时当前的矩阵
 
     public CaptionInfo() {
     }
 
-    public CaptionInfo(Bitmap captionBitmap, Rect locationRect, float degree, Matrix updateMatrix) {
+    public CaptionInfo(Bitmap captionBitmap, Rect targetRect, Rect intrinsicRect, float degree, Matrix updateMatrix) {
         this.captionBitmap = captionBitmap;
-        this.locationRect = locationRect;
+        this.targetRect = targetRect;
+        this.intrinsicRect = intrinsicRect;
         this.degree = degree;
         this.updateMatrix = updateMatrix;
     }
 
     @Override
     public String toString() {
-        return "CaptionInfo{" +
-                "captionBitmap=" + captionBitmap +
-                ", locationRect=" + locationRect.toShortString() +
-                ", degree=" + degree +
-                ", updateMatrix=" + updateMatrix.toShortString() +
-                '}';
+        return "CaptionInfo{" + "captionBitmap=" + captionBitmap + ", targetRect=" + targetRect.toShortString()
+            + ", intrinsicRect=" + intrinsicRect.toShortString() + ", degree=" + degree + ", updateMatrix="
+            + updateMatrix + '}';
+    }
+
+    /**
+     * @param viewX 横坐标x
+     * @param viewY 纵坐标y
+     * @return 返回传入的坐标是否落在字幕在字幕控件上的区域
+     */
+    public boolean isPointInIntrinsicRect(float viewX, float viewY) {
+        // 坐标映射到控件上
+        Matrix matrix = new Matrix();
+        int centerX = (intrinsicRect.right - intrinsicRect.left) / 2;
+        int centerY = (intrinsicRect.bottom - intrinsicRect.top) / 2;
+        matrix.postRotate(-degree, centerX, centerY);
+        float[] pst = new float[] {viewX, viewY};
+        matrix.mapPoints(pst);
+        return intrinsicRect.contains((int) pst[0], (int) pst[1]);
     }
 
 }

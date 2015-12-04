@@ -24,7 +24,6 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.ViewGroup;
 import android.widget.EditText;
 
 /**
@@ -86,7 +85,6 @@ public class FlexibleCaptionView extends View {
     private Typeface mTextTypeface = Typeface.DEFAULT;
     private int mTextBorderWidth; // 文字的边界宽度，和padding一起决定换行宽度
     private int mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
-    private int mTextBorderHeight;
     private Layout.Alignment mLayoutTextAlignment = Layout.Alignment.ALIGN_CENTER;
     private PointF mInitTextStartPoint = new PointF();
     private float[] mUpdateTextStartPoint = new float[2];
@@ -111,7 +109,9 @@ public class FlexibleCaptionView extends View {
     private Matrix mExportMatrix = new Matrix(); // 用于导出字幕的矩阵
 
     private OnCaptionClickListener mOnCaptionClickListener;
-    private boolean mJustGetFocus; // 刚获取焦点
+    private OnCaptionTranslateListener mOnCaptionTranslateListener;
+    private boolean mTranslateStart; // 平移开始标记
+    private boolean mCancelClick; // 取消点击事件
     private boolean mEnable = true;
 
     public FlexibleCaptionView(Context context) {
@@ -393,10 +393,26 @@ public class FlexibleCaptionView extends View {
         }
     }
 
+    public OnCaptionTranslateListener getOnCaptionGestureListener() {
+        return mOnCaptionTranslateListener;
+    }
+
+    /**
+     * 设置字幕手势动作监听
+     * @param onCaptionGestureListener
+     */
+    public void setOnCaptionGestureListener(OnCaptionTranslateListener onCaptionGestureListener) {
+        this.mOnCaptionTranslateListener = onCaptionGestureListener;
+    }
+
     public OnCaptionClickListener getOnCaptionClickListener() {
         return mOnCaptionClickListener;
     }
 
+    /**
+     * 设置点击事件监听
+     * @param mCaptionClickListener 点击监听
+     */
     public void setOnCaptionClickListener(OnCaptionClickListener mCaptionClickListener) {
         this.mOnCaptionClickListener = mCaptionClickListener;
     }
@@ -784,21 +800,22 @@ public class FlexibleCaptionView extends View {
     }
 
     private ImageCaptionInfo buildImageCaptionInfo(float scale) {
-        Rect locationRect = getTargetRect(scale);
+        Rect targetRect = getTargetRect(scale);
         // 创建字幕图层
         Bitmap imageCaptionBitmap =
-            Bitmap.createBitmap(locationRect.width(), locationRect.height(), Bitmap.Config.ARGB_8888);
+            Bitmap.createBitmap(targetRect.width(), targetRect.height(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(imageCaptionBitmap);
-        canvas.drawBitmap(mImgCaptionBitmap, null, new Rect(0, 0, locationRect.width(), locationRect.height()),
+        canvas.drawBitmap(mImgCaptionBitmap, null, new Rect(0, 0, targetRect.width(), targetRect.height()),
             mBitmapPaint);
-        return new ImageCaptionInfo(imageCaptionBitmap, locationRect, mTotalDegree, mUpdateMatrix, mImgCaptionBitmap);
+        return new ImageCaptionInfo(imageCaptionBitmap, targetRect, getIntrinsicRect(), mTotalDegree, mUpdateMatrix,
+            mImgCaptionBitmap);
     }
 
     private TextCaptionInfo buildTextCaptionInfo(float scale) {
-        Rect locationRect = getTargetRect(scale);
+        Rect targetRect = getTargetRect(scale);
         // 创建字幕图层
         Bitmap textCaptionBitmap =
-            Bitmap.createBitmap(locationRect.width(), locationRect.height(), Bitmap.Config.ARGB_8888);
+            Bitmap.createBitmap(targetRect.width(), targetRect.height(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(textCaptionBitmap);
         float scalePaddingLeft = mPaddingLeft * mTotalScale * scale;
         float scalePaddingTop = mPaddingTop * mTotalScale * scale;
@@ -820,9 +837,9 @@ public class FlexibleCaptionView extends View {
             new StaticLayout(mText, mTextPaint, getStaticLayoutBreakWidth(scale), mLayoutTextAlignment, 1.0f, 0f, false);
         mTextLayout.draw(canvas);
         mTextPaint.setTextSize(mTextPaint.getTextSize() / scale);
-        return new TextCaptionInfo(textCaptionBitmap, locationRect, mTotalDegree, new Matrix(mUpdateMatrix),
-            mTotalScale, mText.toString(), mTextSize, mTextColor, mTextBorderWidth, mBorderColor, mTextTypeface,
-            mLayoutTextAlignment, mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom);
+        return new TextCaptionInfo(textCaptionBitmap, targetRect, getIntrinsicRect(), mTotalDegree, new Matrix(
+            mUpdateMatrix), mTotalScale, mText.toString(), mTextSize, mTextColor, mTextBorderWidth, mBorderColor,
+            mTextTypeface, mLayoutTextAlignment, mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom);
     }
 
     private Rect getTargetRect(float scale) {
@@ -833,6 +850,16 @@ public class FlexibleCaptionView extends View {
         mExportMatrix.postScale(scale, scale, getWidth() * 1.0f / 2, getHeight() * 1.0f / 2);
         // 移动原点
         mExportMatrix.postTranslate(-(getWidth() - getWidth() * scale) / 2, -(getHeight() - getHeight() * scale) / 2);
+        // 获取映射后矩形的位置信息
+        RectF dst = new RectF();
+        mExportMatrix.mapRect(dst, mBorderRect);
+        return new Rect((int) dst.left, (int) dst.top, (int) dst.right, (int) dst.bottom);
+    }
+
+    private Rect getIntrinsicRect() {
+        mExportMatrix.set(mUpdateMatrix);
+        // 摆正
+        mExportMatrix.postRotate(-mTotalDegree, mCenterPoint.x, mCenterPoint.y);
         // 获取映射后矩形的位置信息
         RectF dst = new RectF();
         mExportMatrix.mapRect(dst, mBorderRect);
@@ -1005,6 +1032,7 @@ public class FlexibleCaptionView extends View {
     }
 
     private void initBorderRect() {
+        int mTextBorderHeight;
         if (mIsImgCaption) {
             // 贴图字幕
             mTextBorderWidth = mImgCaptionBitmap.getWidth();
@@ -1124,6 +1152,7 @@ public class FlexibleCaptionView extends View {
         mCurrentRightBottomRect.set(left, top, right, bottom);
     }
 
+    private float mDownX, mDownY;
     private float mLastX, mLastY; // 上次点击的坐标
     private float mDownDistance; // 按下时两指间的距离
     private float mPointerDegree; // 按下时两指的旋转角度
@@ -1142,10 +1171,13 @@ public class FlexibleCaptionView extends View {
         float curY = event.getY();
         switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
+                mDownX = curX;
+                mDownY = curY;
                 consume = determineTouchRegion(curX, curY);
                 if (mTouchRegion == TouchRegion.INSIDE) {
                     mTouchMode = TouchMode.DRAG;
                 }
+                mTranslateStart = false;
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 if (mBlockRotateScaleEvent) {
@@ -1196,18 +1228,23 @@ public class FlexibleCaptionView extends View {
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                if (mBlockRotateScaleEvent) {
-                    break;
-                } else if (!mJustGetFocus && mTouchRegion == TouchRegion.INSIDE) {
+                // 刚获得焦点，不允许点击事件
+                if (!mCancelClick) {
                     long clickTimeout = event.getEventTime() - event.getDownTime();
-                    if (clickTimeout <= CLICK_TIMEOUT && mOnCaptionClickListener != null) {
-                        mOnCaptionClickListener.onClick(this);
+                    if (clickTimeout <= CLICK_TIMEOUT) {
+                        notifyRegionClick();
                     }
                 }
-                mJustGetFocus = false;
-                adjustRotateIfNeed();
+                mCancelClick = false;
+
+                if (!mBlockRotateScaleEvent) {
+                    adjustRotateIfNeed();
+                }
                 mTouchMode = TouchMode.NONE;
                 mStillDownPointId = 0;
+                if (mTranslateStart) {
+                    notifyTranslateEnd();
+                }
                 break;
         }
         mLastX = curX;
@@ -1215,9 +1252,26 @@ public class FlexibleCaptionView extends View {
         return consume;
     }
 
+    private void notifyRegionClick() {
+        if (mOnCaptionClickListener == null) {
+            return;
+        }
+        switch (mTouchRegion) {
+            case INSIDE:
+                mOnCaptionClickListener.onInsideClick(this);
+                break;
+            case LEFT_TOP_ICON:
+                mOnCaptionClickListener.onLeftTopClick(this);
+                break;
+        }
+    }
+
     private void adjustRotateIfNeed() {
         if (mTouchRegion == TouchRegion.INSIDE || mTouchRegion == TouchRegion.RIGHT_BOTTOM_ICON) {
             float adjustDegree = adjustDegreeToHorizontalOrVertical(mTotalDegree, OFFSET_DEGREE);
+            if (adjustDegree == 0) {
+                return;
+            }
             mUpdateMatrix.postRotate(adjustDegree - mTotalDegree, mCenterPoint.x, mCenterPoint.y);
             updateLocationDataAndRefresh();
             mTotalDegree = adjustDegree;
@@ -1260,7 +1314,7 @@ public class FlexibleCaptionView extends View {
         switch (mTouchRegion) {
             case INSIDE:
                 if (mTouchMode == TouchMode.DRAG) {
-                    processMove(curX - mLastX, curY - mLastY);
+                    processMove(curX, curY);
                 } else if (mTouchMode == TouchMode.POINTER_SCALE_ROTATE) {
                     // 双指缩放
                     float curDistance = calculatePointsDistance(event);
@@ -1280,6 +1334,18 @@ public class FlexibleCaptionView extends View {
                 }
                 scaleAndRotate(curX, curY);
                 break;
+        }
+    }
+
+    private void notifyTranslateStart() {
+        if (mOnCaptionTranslateListener != null) {
+            mOnCaptionTranslateListener.onStart(this);
+        }
+    }
+
+    private void notifyTranslateEnd() {
+        if (mOnCaptionTranslateListener != null) {
+            mOnCaptionTranslateListener.onEnd(this);
         }
     }
 
@@ -1339,11 +1405,10 @@ public class FlexibleCaptionView extends View {
         } else if (mLeftTopBmp != null && mCurrentLeftTopIconRect.contains(curX, curY)) {
             if (!needToSetFocusFirstly()) {
                 mTouchRegion = TouchRegion.LEFT_TOP_ICON;
-                ((ViewGroup) getParent()).removeView(this);
             }
         } else if (isInBorderRegion(curX, curY)) {
             if (!needToSetFocusFirstly()) {
-                // 内容与角落重叠区域响应角落事件
+                // 内容与角落重叠区域优先响应角落事件
                 mTouchRegion = TouchRegion.INSIDE;
             }
         } else {
@@ -1361,8 +1426,8 @@ public class FlexibleCaptionView extends View {
                 parent.markChildFocus(this);
             }
             mTouchRegion = TouchRegion.INSIDE;
-            // 刚获得焦点，不允许点击事件
-            mJustGetFocus = true;
+            // 想要选中，而不是点击
+            mCancelClick = true;
             return true;
         }
         return false;
@@ -1378,11 +1443,28 @@ public class FlexibleCaptionView extends View {
         return mBorderRegion.contains((int) curX, (int) curY);
     }
 
-    private void processMove(float dx, float dy) {
+    private void processMove(float curX, float curY) {
+        float totalX = Math.abs(curX - mDownX), totalY = Math.abs(curY - mDownY);
+        if (Math.abs(totalX) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()
+            || Math.abs(totalY) >= ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
+            // 猜测用户想要移动，而不是单击
+            mCancelClick = true;
+            // 平移动作开始，通知
+            if (!mTranslateStart) {
+                mTranslateStart = true;
+                notifyTranslateStart();
+            }
+        }
+
+        float dx = curX - mLastX;
+        float dy = curY - mLastY;
         // 检查平移是否超出边界
         float[] adjustDxDy = checkMoveBounds(dx, dy);
         dx = adjustDxDy[0];
         dy = adjustDxDy[1];
+        if (dx == 0 && dy == 0) {
+            return;
+        }
         mUpdateMatrix.postTranslate(dx, dy);
         updateLocationDataAndRefresh();
     }
@@ -1413,6 +1495,9 @@ public class FlexibleCaptionView extends View {
 
     private void processScale(float scale) {
         scale = checkScaleBounds(scale);
+        if (scale == 1) {
+            return;
+        }
         this.mTotalScale *= scale;
         mUpdateMatrix.postScale(scale, scale, mCenterPoint.x, mCenterPoint.y);
         updateTextPaint(scale);
@@ -1428,6 +1513,9 @@ public class FlexibleCaptionView extends View {
 
     private void processRotate(float degree) {
         degree = checkRotateBounds(degree);
+        if (degree == 0) {
+            return;
+        }
         mTotalDegree = (mTotalDegree + degree) % 360;
         mUpdateMatrix.postRotate(degree, mCenterPoint.x, mCenterPoint.y);
         updateLocationDataAndRefresh();
@@ -1546,10 +1634,35 @@ public class FlexibleCaptionView extends View {
      */
     public interface OnCaptionClickListener {
         /**
-         * 字幕控件被点击时调用
+         * 字幕边框区域被点击时调用
          *
          * @param captionView 字幕控件
          */
-        void onClick(FlexibleCaptionView captionView);
+        void onInsideClick(FlexibleCaptionView captionView);
+
+        /**
+         * 字幕左上角被点击时调用
+         * @param captionView 字幕控件
+         */
+        void onLeftTopClick(FlexibleCaptionView captionView);
     }
+
+    /**
+     * 字幕平移监听器
+     */
+    public interface OnCaptionTranslateListener {
+
+        /**
+         * 开始
+         * @param captionView 字幕控件
+         */
+        void onStart(FlexibleCaptionView captionView);
+
+        /**
+         * 结束
+         * @param captionView 字幕控件
+         */
+        void onEnd(FlexibleCaptionView captionView);
+    }
+
 }

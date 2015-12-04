@@ -5,19 +5,23 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Layout;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.meitu.captionlayout.CaptionInfo;
 import com.meitu.captionlayout.CaptionLayout;
 import com.meitu.captionlayout.FlexibleCaptionView;
 import com.meitu.captionlayout.FlexibleCaptionView.OnCaptionClickListener;
+import com.meitu.captionlayout.FlexibleCaptionView.OnCaptionTranslateListener;
 
 public class CaptionMainAct extends Activity {
 
+    private LinearLayout linear_btn_container;
     private CaptionLayout captionLayoutContainer;
     private FlexibleCaptionView captionView1;
     private ImageView imgViewShow;
@@ -32,6 +36,7 @@ public class CaptionMainAct extends Activity {
     }
 
     private void initView() {
+        linear_btn_container = getView(R.id.linear_btn_container);
         captionLayoutContainer = getView(R.id.captionLayout_container);
         captionView1 = getView(R.id.captionView1);
         imgViewShow = getView(R.id.imgView_show);
@@ -42,23 +47,46 @@ public class CaptionMainAct extends Activity {
 
     private void registerMonitor() {
         captionView1.setOnCaptionClickListener(onCaptionClickListener);
+        captionView1.setOnCaptionGestureListener(onCaptionTranslateListener);
         captionLayoutContainer.setOnCaptionFocusChangeListener(new CaptionLayout.OnCaptionFocusChangeListener() {
             @Override
             public void onCaptionFocusChange(CaptionLayout captionLayout, FlexibleCaptionView lastFocusCaptionView,
-                                             FlexibleCaptionView curFocusCaptionView) {
+                FlexibleCaptionView curFocusCaptionView) {
                 CharSequence lastText = lastFocusCaptionView != null ? lastFocusCaptionView.getText() : null;
                 CharSequence curText = curFocusCaptionView != null ? curFocusCaptionView.getText() : null;
                 Log.e("Flex", "onCaptionFocusChange...lastFocusCaptionView=" + lastText + ",curFocusCaptionView="
-                        + curText);
+                    + curText);
             }
         });
     }
 
+    private OnCaptionTranslateListener onCaptionTranslateListener = new OnCaptionTranslateListener() {
+        @Override
+        public void onStart(FlexibleCaptionView captionView) {
+            Log.e("flex", "onGestureStart");
+            linear_btn_container.setVisibility(View.GONE);
+        }
+
+        @Override
+        public void onEnd(FlexibleCaptionView captionView) {
+            Log.e("flex", "onGestureEnd");
+            linear_btn_container.setVisibility(View.VISIBLE);
+        }
+    };
+
     private OnCaptionClickListener onCaptionClickListener = new OnCaptionClickListener() {
         @Override
-        public void onClick(FlexibleCaptionView captionView) {
+        public void onInsideClick(FlexibleCaptionView captionView) {
+            Log.e("flex", "onInsideClick");
             edit(captionView);
         }
+
+        @Override
+        public void onLeftTopClick(FlexibleCaptionView captionView) {
+            Log.e("flex", "onLeftTopClick");
+            captionLayoutContainer.removeCaptionView(captionView);
+        }
+
     };
 
     private <T extends View> T getView(int id) {
@@ -70,9 +98,10 @@ public class CaptionMainAct extends Activity {
     }
 
     public void addImgCaption(View view) {
-        FlexibleCaptionView imgCaptionView = FlexibleCaptionView.Builder.create(this)
+        FlexibleCaptionView imgCaptionView =
+            FlexibleCaptionView.Builder.create(this)
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
-                        android.R.drawable.ic_menu_crop)
+                    android.R.drawable.ic_menu_crop)
                 .imgCaption(android.R.drawable.ic_input_add)
                 .build();
         captionLayoutContainer.addCaptionView(imgCaptionView);
@@ -92,8 +121,7 @@ public class CaptionMainAct extends Activity {
         if (captionView != null) {
             captionInfo = captionView.exportCaptionInfo(0.5f);
             imgViewShow.setImageBitmap(captionInfo.captionBitmap);
-            String info = "locationRect=" + captionInfo.locationRect.toShortString() + ",degree="
-                    + captionInfo.degree;
+            String info = "targetRect=" + captionInfo.targetRect.toShortString() + ",degree=" + captionInfo.degree;
             labelExportInfo.setText(info);
         } else {
             captionInfo = null;
@@ -106,12 +134,14 @@ public class CaptionMainAct extends Activity {
         if (captionInfo == null) {
             return;
         }
-        FlexibleCaptionView captionView = FlexibleCaptionView.Builder.create(this)
+        FlexibleCaptionView captionView =
+            FlexibleCaptionView.Builder.create(this)
                 .loadConfig(captionInfo)
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
-                        android.R.drawable.ic_menu_crop)
+                    android.R.drawable.ic_menu_crop)
                 .build();
         captionView.setOnCaptionClickListener(onCaptionClickListener);
+        captionView.setOnCaptionGestureListener(onCaptionTranslateListener);
         captionLayoutContainer.addCaptionView(captionView);
     }
 
@@ -133,7 +163,7 @@ public class CaptionMainAct extends Activity {
         if (resultCode == RESULT_OK) {
             boolean isAdd = data.getBooleanExtra("isAdd", true);
             CaptionConfig captionConfig =
-                    (CaptionConfig) data.getSerializableExtra(CaptionConfig.class.getSimpleName());
+                (CaptionConfig) data.getSerializableExtra(CaptionConfig.class.getSimpleName());
             if (isAdd) {
                 // 1.直接根据EditText的参数来创建字幕
                 // addCaptionWidthEditText();
@@ -147,34 +177,34 @@ public class CaptionMainAct extends Activity {
 
     private void addCaptionWidthEditText() {
         FlexibleCaptionView addCaptionView =
-                FlexibleCaptionView.Builder.create(this)
-                        .loadConfig(AddEditCaptionAct.ediTxtCaption)
-                        .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
-                                android.R.drawable.ic_menu_crop)
-                        .build();
+            FlexibleCaptionView.Builder.create(this)
+                .loadConfig(AddEditCaptionAct.ediTxtCaption)
+                .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
+                        android.R.drawable.ic_menu_crop)
+                .build();
         captionLayoutContainer.addCaptionView(addCaptionView);
     }
 
     private void addCaptionWithBuilder(CaptionConfig config) {
         Typeface typeface =
-                Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
-                        AddEditCaptionAct.typefaceStyles[config.typefaceStyleIndex]);
+            Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
+                AddEditCaptionAct.typefaceStyles[config.typefaceStyleIndex]);
         FlexibleCaptionView addCaptionView =
-                FlexibleCaptionView.Builder.create(this)
-                        .text(config.text)
-                        .textSize(TypedValue.COMPLEX_UNIT_PX, config.textSize)
-                        .textBorderWidth(config.textBorderWidth)
-                        .textColor(config.textColor)
-                        .textTypeface(typeface)
-                        .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
-                                android.R.drawable.ic_menu_crop)
-                        .paddingLeft(TypedValue.COMPLEX_UNIT_PX, config.paddingLeft)
-                        .paddingRight(TypedValue.COMPLEX_UNIT_PX, config.paddingRight)
-                        .paddingTop(TypedValue.COMPLEX_UNIT_PX, config.paddingTop)
-                        .paddingBottom(TypedValue.COMPLEX_UNIT_PX, config.paddingBottom)
-                        .iconSize(TypedValue.COMPLEX_UNIT_DIP, 35)
-                        .textBorderColor(Color.MAGENTA)
-                        .build();
+            FlexibleCaptionView.Builder.create(this)
+                .text(config.text)
+                .textSize(TypedValue.COMPLEX_UNIT_PX, config.textSize)
+                .textBorderWidth(config.textBorderWidth)
+                .textColor(config.textColor)
+                .textTypeface(typeface)
+                .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
+                        android.R.drawable.ic_menu_crop)
+                .paddingLeft(TypedValue.COMPLEX_UNIT_PX, config.paddingLeft)
+                .paddingRight(TypedValue.COMPLEX_UNIT_PX, config.paddingRight)
+                .paddingTop(TypedValue.COMPLEX_UNIT_PX, config.paddingTop)
+                .paddingBottom(TypedValue.COMPLEX_UNIT_PX, config.paddingBottom)
+                .iconSize(TypedValue.COMPLEX_UNIT_DIP, 35)
+                .textBorderColor(Color.MAGENTA)
+                .build();
         addCaptionView.setOnCaptionClickListener(onCaptionClickListener);
         captionLayoutContainer.addCaptionView(addCaptionView);
     }
@@ -187,18 +217,19 @@ public class CaptionMainAct extends Activity {
             // captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, config.textSize);
             captionView.setTextColor(config.textColor);
             Typeface typeface =
-                    Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
-                            AddEditCaptionAct.typefaceStyles[config.typefaceStyleIndex]);
+                Typeface.create(AddEditCaptionAct.typefaces[config.typefaceIndex],
+                    AddEditCaptionAct.typefaceStyles[config.typefaceStyleIndex]);
             captionView.setTextTypeface(typeface);
         }
     }
 
     private void configCaptionView(FlexibleCaptionView captionView, String caption, float textSize, int textColor,
-                                   Typeface typeFace) {
+        Typeface typeFace) {
         captionView.setText(caption);
         captionView.setTextColor(textColor);
         captionView.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
         captionView.setTextTypeface(typeFace);
+        captionView.setLayoutTextAlignment(Layout.Alignment.ALIGN_CENTER);
         captionView.setBorderColor(Color.RED);
         captionView.setIconSizeDp(40);
         captionView.setLeftTopIcon(android.R.drawable.ic_delete);

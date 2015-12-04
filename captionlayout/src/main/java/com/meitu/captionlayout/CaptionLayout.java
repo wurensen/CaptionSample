@@ -10,9 +10,9 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 /**
- * 字幕控件布局，提供多个字幕控件的控制，增加，移除，上下层关系的改变
+ * 字幕控件布局，提供多个字幕控件的控制，增加，移除
  *
- * Created by meitu on 2015/11/17.
+ * Created by wrs on 2015/11/17.
  */
 public class CaptionLayout extends FrameLayout {
 
@@ -67,7 +67,6 @@ public class CaptionLayout extends FrameLayout {
                 // 当前选中字幕被移除，无选中
                 mCurFocusCaptionView = null;
                 mLastFocusCaptionView = null;
-                notifyCaptionFocusChange();
             } else if (view == mLastFocusCaptionView) {
                 mLastFocusCaptionView = null;
             }

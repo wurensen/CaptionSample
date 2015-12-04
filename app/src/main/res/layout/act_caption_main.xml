@@ -6,11 +6,33 @@
                 android:layout_height="match_parent"
                 tools:context=".CaptionMainAct">
 
-    <LinearLayout
-        android:id="@+id/ll"
+
+    <com.meitu.captionlayout.CaptionLayout
+        android:id="@+id/captionLayout_container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#ddd">
+        android:layout_height="match_parent"
+        android:background="#e4efef">
+
+        <com.meitu.captionlayout.FlexibleCaptionView
+            android:id="@+id/captionView1"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:borderColor="#ff6200"
+            app:leftTopIcon="@android:drawable/ic_delete"
+            app:rightBottomIcon="@android:drawable/ic_menu_crop"
+            app:rightTopIcon="@android:drawable/checkbox_on_background"
+            app:text="用布局添加的字幕"
+            app:textColor="#00aaff"
+            app:textPadding="5dp"
+            app:textSize="30dp"/>
+
+    </com.meitu.captionlayout.CaptionLayout>
+
+
+    <LinearLayout
+        android:id="@+id/linear_btn_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <Button
             android:layout_width="0dp"
@@ -54,28 +76,6 @@
             android:text="去除当前选中状态"/>
 
     </LinearLayout>
-
-    <com.meitu.captionlayout.CaptionLayout
-        android:id="@+id/captionLayout_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/ll"
-        android:background="#e4efef">
-
-        <com.meitu.captionlayout.FlexibleCaptionView
-            android:id="@+id/captionView1"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:borderColor="#ff6200"
-            app:leftTopIcon="@android:drawable/ic_delete"
-            app:rightBottomIcon="@android:drawable/ic_menu_crop"
-            app:rightTopIcon="@android:drawable/checkbox_on_background"
-            app:text="用布局添加的字幕"
-            app:textColor="#00aaff"
-            app:textPadding="5dp"
-            app:textSize="30dp"/>
-
-    </com.meitu.captionlayout.CaptionLayout>
 
     <ImageView
         android:id="@+id/imgView_show"
