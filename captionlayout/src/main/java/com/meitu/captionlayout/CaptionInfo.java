@@ -19,8 +19,8 @@ public abstract class CaptionInfo {
     public CaptionInfo() {
     }
 
-    public CaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX,
-        float relativeCenterY, float relativeWidth, float relativeHeight) {
+    public CaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX, float relativeCenterY,
+        float relativeWidth, float relativeHeight) {
         this.captionBitmap = captionBitmap;
         this.degree = degree;
         this.relativeCenterX = relativeCenterX;
@@ -30,17 +30,19 @@ public abstract class CaptionInfo {
     }
 
     /**
-     * @param viewX 横坐标x
-     * @param viewY 纵坐标y
+     * @param viewWidth 控件宽度
+     * @param viewHeight 控件高度
+     * @param touchX 横坐标x
+     * @param touchY 纵坐标y
      * @return 返回传入的坐标是否落在字幕在字幕控件上的区域
      */
-    public boolean isPointInIntrinsicRect(int viewWidth, int viewHeight, float viewX, float viewY) {
+    public boolean isTouchPointInCaption(int viewWidth, int viewHeight, float touchX, float touchY) {
         // 坐标映射到控件上
         Matrix matrix = new Matrix();
         int centerX = (int) (relativeCenterX * viewWidth);
         int centerY = (int) (relativeCenterY * viewHeight);
         matrix.postRotate(-degree, centerX, centerY);
-        float[] pst = new float[] {viewX, viewY};
+        float[] pst = new float[] {touchX, touchY};
         matrix.mapPoints(pst);
         int halfWidth = (int) (relativeWidth * viewWidth / 2);
         int halfHeight = (int) (relativeHeight * viewHeight / 2);

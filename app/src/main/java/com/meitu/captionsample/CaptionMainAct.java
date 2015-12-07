@@ -65,10 +65,10 @@ public class CaptionMainAct extends Activity {
                 if (captionInfo != null) {
                     Log.e(
                         "flex",
-                        "captionInfo.isPointInIntrinsicRect="
-                            + captionInfo.isPointInIntrinsicRect(v.getWidth(), v.getHeight(), event.getX(),
+                        "captionInfo.isTouchPointInCaption="
+                            + captionInfo.isTouchPointInCaption(v.getWidth(), v.getHeight(), event.getX(),
                                 event.getY()));
-                    if (captionInfo.isPointInIntrinsicRect(v.getWidth(), v.getHeight(), event.getX(), event.getY())) {
+                    if (captionInfo.isTouchPointInCaption(v.getWidth(), v.getHeight(), event.getX(), event.getY())) {
                         importCaption(null);
                     }
                 }
