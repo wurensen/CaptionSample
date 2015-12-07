@@ -1,7 +1,6 @@
 package com.meitu.captionlayout;
 
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 
 /**
@@ -14,9 +13,9 @@ public class ImageCaptionInfo extends CaptionInfo {
     public ImageCaptionInfo() {
     }
 
-    public ImageCaptionInfo(Bitmap captionBitmap, Rect locationRect, Rect intrinsicRect, float degree,
-        Matrix updateMatrix, Bitmap intrinsicBitmap) {
-        super(captionBitmap, locationRect, intrinsicRect, degree, updateMatrix);
+    public ImageCaptionInfo(Bitmap captionBitmap, Rect targetRect, float degree, float relativeCenterX,
+        float relativeCenterY, float relativeWidth, float relativeHeight, Bitmap intrinsicBitmap) {
+        super(captionBitmap, targetRect, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
         this.intrinsicBitmap = intrinsicBitmap;
     }
 

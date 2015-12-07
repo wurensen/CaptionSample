@@ -85,10 +85,6 @@ public class AddEditCaptionAct extends Activity {
                 .textBorderColor(Color.BLACK)
                 .textTypeface(typeface)
                 .layoutTextAlignment(Layout.Alignment.ALIGN_CENTER)
-                .paddingLeft(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingLeft())
-                .paddingRight(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingRight())
-                .paddingTop(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingTop())
-                .paddingBottom(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getPaddingBottom())
                 .build();
         // 屏蔽事件
         captionPreview.setEnable(false);

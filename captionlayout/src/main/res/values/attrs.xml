@@ -11,11 +11,11 @@
         <!--边框大小-->
         <attr name="textBorderWidth" format="dimension"/>
         <!--文字距离边框的间隙-->
-        <attr name="textPadding" format="dimension"/>
+        <!--<attr name="textPadding" format="dimension"/>
         <attr name="textPaddingLeft" format="dimension"/>
         <attr name="textPaddingRight" format="dimension"/>
         <attr name="textPaddingTop" format="dimension"/>
-        <attr name="textPaddingBottom" format="dimension"/>
+        <attr name="textPaddingBottom" format="dimension"/>-->
         <!--字幕边框颜色-->
         <attr name="borderColor" format="color"/>
         <!--左上角功能图标-->

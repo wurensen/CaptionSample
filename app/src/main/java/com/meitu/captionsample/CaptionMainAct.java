@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Layout;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -56,6 +57,22 @@ public class CaptionMainAct extends Activity {
                 CharSequence curText = curFocusCaptionView != null ? curFocusCaptionView.getText() : null;
                 Log.e("Flex", "onCaptionFocusChange...lastFocusCaptionView=" + lastText + ",curFocusCaptionView="
                     + curText);
+            }
+        });
+        captionLayoutContainer.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (captionInfo != null) {
+                    Log.e(
+                        "flex",
+                        "captionInfo.isPointInIntrinsicRect="
+                            + captionInfo.isPointInIntrinsicRect(v.getWidth(), v.getHeight(), event.getX(),
+                                event.getY()));
+                    if (captionInfo.isPointInIntrinsicRect(v.getWidth(), v.getHeight(), event.getX(), event.getY())) {
+                        importCaption(null);
+                    }
+                }
+                return false;
             }
         });
     }
@@ -121,7 +138,7 @@ public class CaptionMainAct extends Activity {
         if (captionView != null) {
             captionInfo = captionView.exportCaptionInfo(0.5f);
             imgViewShow.setImageBitmap(captionInfo.captionBitmap);
-            String info = "targetRect=" + captionInfo.targetRect.toShortString() + ",degree=" + captionInfo.degree;
+            String info = "targetRect=" + captionInfo.targetRect.toShortString() + "\ndegree=" + captionInfo.degree;
             labelExportInfo.setText(info);
         } else {
             captionInfo = null;
@@ -142,6 +159,8 @@ public class CaptionMainAct extends Activity {
                 .build();
         captionView.setOnCaptionClickListener(onCaptionClickListener);
         captionView.setOnCaptionGestureListener(onCaptionTranslateListener);
+//        captionLayoutContainer.addView(captionView, new FrameLayout.LayoutParams(captionLayoutContainer.getWidth() / 2,
+//            captionLayoutContainer.getHeight() / 2));
         captionLayoutContainer.addCaptionView(captionView);
     }
 
@@ -180,7 +199,7 @@ public class CaptionMainAct extends Activity {
             FlexibleCaptionView.Builder.create(this)
                 .loadConfig(AddEditCaptionAct.ediTxtCaption)
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
-                        android.R.drawable.ic_menu_crop)
+                    android.R.drawable.ic_menu_crop)
                 .build();
         captionLayoutContainer.addCaptionView(addCaptionView);
     }
@@ -197,11 +216,7 @@ public class CaptionMainAct extends Activity {
                 .textColor(config.textColor)
                 .textTypeface(typeface)
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,
-                        android.R.drawable.ic_menu_crop)
-                .paddingLeft(TypedValue.COMPLEX_UNIT_PX, config.paddingLeft)
-                .paddingRight(TypedValue.COMPLEX_UNIT_PX, config.paddingRight)
-                .paddingTop(TypedValue.COMPLEX_UNIT_PX, config.paddingTop)
-                .paddingBottom(TypedValue.COMPLEX_UNIT_PX, config.paddingBottom)
+                    android.R.drawable.ic_menu_crop)
                 .iconSize(TypedValue.COMPLEX_UNIT_DIP, 35)
                 .textBorderColor(Color.MAGENTA)
                 .build();

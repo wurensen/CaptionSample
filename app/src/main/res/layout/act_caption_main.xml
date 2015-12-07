@@ -23,7 +23,6 @@
             app:rightTopIcon="@android:drawable/checkbox_on_background"
             app:text="用布局添加的字幕"
             app:textColor="#00aaff"
-            app:textPadding="5dp"
             app:textSize="30dp"/>
 
     </com.meitu.captionlayout.CaptionLayout>
