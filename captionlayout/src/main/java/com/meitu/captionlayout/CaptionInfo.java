@@ -10,7 +10,6 @@ import android.graphics.Rect;
  */
 public abstract class CaptionInfo {
     public Bitmap captionBitmap; // 字幕图片
-    public Rect targetRect; // 字幕在导出目标的位置信息（不带角度）
     public float degree; // 旋转角度，绕矩形中心点旋转
     public float relativeCenterX; // 相对字幕控件的中点x
     public float relativeCenterY; // 相对字幕控件的中点y
@@ -20,10 +19,9 @@ public abstract class CaptionInfo {
     public CaptionInfo() {
     }
 
-    public CaptionInfo(Bitmap captionBitmap, Rect targetRect, float degree, float relativeCenterX,
+    public CaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX,
         float relativeCenterY, float relativeWidth, float relativeHeight) {
         this.captionBitmap = captionBitmap;
-        this.targetRect = targetRect;
         this.degree = degree;
         this.relativeCenterX = relativeCenterX;
         this.relativeCenterY = relativeCenterY;

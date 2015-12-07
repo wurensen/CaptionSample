@@ -57,7 +57,7 @@ public class FlexibleCaptionView extends View {
      */
     private static final int DEFAULT_PADDING = 3;
 
-    private boolean mDebug = true;
+    private boolean mDebug = false;
 
     private Matrix mUpdateMatrix = new Matrix(); // 变化矩阵，用来获取最新的点
 
@@ -830,8 +830,8 @@ public class FlexibleCaptionView extends View {
         float relativeCenterY = mCenterPoint.y / getHeight();
         float relativeWidth = getIntrinsicRect().width() * 1.0f / getWidth();
         float relativeHeight = getIntrinsicRect().height() * 1.0f / getHeight();
-        return new ImageCaptionInfo(imageCaptionBitmap, targetRect, mTotalDegree, relativeCenterX, relativeCenterY,
-            relativeWidth, relativeHeight, mImgCaptionBitmap);
+        return new ImageCaptionInfo(imageCaptionBitmap, mTotalDegree, relativeCenterX, relativeCenterY, relativeWidth,
+            relativeHeight, mImgCaptionBitmap);
     }
 
     private TextCaptionInfo buildTextCaptionInfo(float scale) {
@@ -867,8 +867,8 @@ public class FlexibleCaptionView extends View {
         float relativeHeight = getIntrinsicRect().height() * 1.0f / getHeight();
         float relativeTextSize = mTextPaint.getTextSize() / getWidth();
         float relativeTextPadding = mPaddingLeft * mTotalScale / getWidth();
-        return new TextCaptionInfo(textCaptionBitmap, targetRect, mTotalDegree, relativeCenterX, relativeCenterY,
-            relativeWidth, relativeHeight, mText.toString(), relativeTextSize, mTextColor, mBorderColor, mTextTypeface,
+        return new TextCaptionInfo(textCaptionBitmap, mTotalDegree, relativeCenterX, relativeCenterY, relativeWidth,
+            relativeHeight, mText.toString(), relativeTextSize, mTextColor, mBorderColor, mTextTypeface,
             mLayoutTextAlignment, relativeTextPadding);
     }
 

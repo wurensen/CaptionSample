@@ -1,7 +1,6 @@
 package com.meitu.captionlayout;
 
 import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.text.Layout;
 
@@ -22,10 +21,10 @@ public class TextCaptionInfo extends CaptionInfo {
     public TextCaptionInfo() {
     }
 
-    public TextCaptionInfo(Bitmap captionBitmap, Rect targetRect, float degree, float relativeCenterX,
+    public TextCaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX,
         float relativeCenterY, float relativeWidth, float relativeHeight, String text, float relativeTextSize,
         int textColor, int textBorderColor, Typeface textTypeface, Layout.Alignment textAlignment, float relativeTextPadding) {
-        super(captionBitmap, targetRect, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
+        super(captionBitmap, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
         this.text = text;
         this.relativeTextSize = relativeTextSize;
         this.textColor = textColor;

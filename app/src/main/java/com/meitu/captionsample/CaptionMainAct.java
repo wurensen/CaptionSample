@@ -138,7 +138,7 @@ public class CaptionMainAct extends Activity {
         if (captionView != null) {
             captionInfo = captionView.exportCaptionInfo(0.5f);
             imgViewShow.setImageBitmap(captionInfo.captionBitmap);
-            String info = "targetRect=" + captionInfo.targetRect.toShortString() + "\ndegree=" + captionInfo.degree;
+            String info = "degree=" + captionInfo.degree;
             labelExportInfo.setText(info);
         } else {
             captionInfo = null;
@@ -159,8 +159,9 @@ public class CaptionMainAct extends Activity {
                 .build();
         captionView.setOnCaptionClickListener(onCaptionClickListener);
         captionView.setOnCaptionGestureListener(onCaptionTranslateListener);
-//        captionLayoutContainer.addView(captionView, new FrameLayout.LayoutParams(captionLayoutContainer.getWidth() / 2,
-//            captionLayoutContainer.getHeight() / 2));
+        // captionLayoutContainer.addView(captionView, new FrameLayout.LayoutParams(captionLayoutContainer.getWidth() /
+        // 2,
+        // captionLayoutContainer.getHeight() / 2));
         captionLayoutContainer.addCaptionView(captionView);
     }
 

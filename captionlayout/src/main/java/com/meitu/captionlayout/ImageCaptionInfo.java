@@ -1,7 +1,6 @@
 package com.meitu.captionlayout;
 
 import android.graphics.Bitmap;
-import android.graphics.Rect;
 
 /**
  * 导出的贴图字幕信息
@@ -13,9 +12,9 @@ public class ImageCaptionInfo extends CaptionInfo {
     public ImageCaptionInfo() {
     }
 
-    public ImageCaptionInfo(Bitmap captionBitmap, Rect targetRect, float degree, float relativeCenterX,
+    public ImageCaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX,
         float relativeCenterY, float relativeWidth, float relativeHeight, Bitmap intrinsicBitmap) {
-        super(captionBitmap, targetRect, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
+        super(captionBitmap, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
         this.intrinsicBitmap = intrinsicBitmap;
     }
 
