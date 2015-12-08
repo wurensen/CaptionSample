@@ -828,10 +828,10 @@ public class FlexibleCaptionView extends View {
         // 构建导出对象
         float relativeCenterX = mCenterPoint.x / getWidth();
         float relativeCenterY = mCenterPoint.y / getHeight();
-        float relativeWidth = getIntrinsicRect().width() * 1.0f / getWidth();
-        float relativeHeight = getIntrinsicRect().height() * 1.0f / getHeight();
-        return new ImageCaptionInfo(imageCaptionBitmap, mTotalDegree, relativeCenterX, relativeCenterY, relativeWidth,
-            relativeHeight, mImgCaptionBitmap);
+        int width = getIntrinsicRect().width();
+        int height = getIntrinsicRect().height();
+        return new ImageCaptionInfo(imageCaptionBitmap, mTotalDegree, relativeCenterX, relativeCenterY, width, height,
+            mImgCaptionBitmap);
     }
 
     private TextCaptionInfo buildTextCaptionInfo(float scale) {
@@ -863,13 +863,12 @@ public class FlexibleCaptionView extends View {
         // 构建导出对象
         float relativeCenterX = mCenterPoint.x / getWidth();
         float relativeCenterY = mCenterPoint.y / getHeight();
-        float relativeWidth = getIntrinsicRect().width() * 1.0f / getWidth();
-        float relativeHeight = getIntrinsicRect().height() * 1.0f / getHeight();
-        float relativeTextSize = mTextPaint.getTextSize() / getWidth();
-        float relativeTextPadding = mPaddingLeft * mTotalScale / getWidth();
-        return new TextCaptionInfo(textCaptionBitmap, mTotalDegree, relativeCenterX, relativeCenterY, relativeWidth,
-            relativeHeight, mText.toString(), relativeTextSize, mTextColor, mBorderColor, mTextTypeface,
-            mLayoutTextAlignment, relativeTextPadding);
+        int width = getIntrinsicRect().width();
+        int height = getIntrinsicRect().height();
+        float textSize = mTextPaint.getTextSize();
+        int padding = (int) (mPaddingLeft * mTotalScale);
+        return new TextCaptionInfo(textCaptionBitmap, mTotalDegree, relativeCenterX, relativeCenterY, width, height,
+            mText.toString(), textSize, mTextColor, mBorderColor, mTextTypeface, mLayoutTextAlignment, padding);
     }
 
     private Rect getTargetRect(float scale) {
@@ -1014,16 +1013,15 @@ public class FlexibleCaptionView extends View {
         mTotalDegree = mCaptionInfo.degree;
         if (mCaptionInfo instanceof TextCaptionInfo) {
             TextCaptionInfo textCaptionInfo = (TextCaptionInfo) mCaptionInfo;
-            mTextBorderWidth = (int) (textCaptionInfo.relativeWidth * getWidth());
-            mTextSize = textCaptionInfo.relativeTextSize * getWidth();
+            mTextBorderWidth = textCaptionInfo.width;
+            mTextSize = textCaptionInfo.textSize;
             mText = textCaptionInfo.text;
 
             mTextTypeface = textCaptionInfo.textTypeface;
             mLayoutTextAlignment = textCaptionInfo.textAlignment;
             mBorderColor = textCaptionInfo.textBorderColor;
             mTextColor = textCaptionInfo.textColor;
-            mPaddingLeft =
-                mPaddingRight = mPaddingTop = mPaddingBottom = (int) (textCaptionInfo.relativeTextPadding * getWidth());
+            mPaddingLeft = mPaddingRight = mPaddingTop = mPaddingBottom = textCaptionInfo.textPadding;
         } else if (mCaptionInfo instanceof ImageCaptionInfo) {
             ImageCaptionInfo imageCaptionInfo = (ImageCaptionInfo) mCaptionInfo;
             mImgCaptionBitmap = imageCaptionInfo.intrinsicBitmap;

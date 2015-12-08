@@ -13,20 +13,20 @@ public abstract class CaptionInfo {
     public float degree; // 旋转角度，绕矩形中心点旋转
     public float relativeCenterX; // 相对字幕控件的中点x
     public float relativeCenterY; // 相对字幕控件的中点y
-    public float relativeWidth; // 相对字幕控件的宽度
-    public float relativeHeight; // 相对字幕控件的高度
+    public int width; // 绝对宽度
+    public int height; // 绝对高度
 
     public CaptionInfo() {
     }
 
     public CaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX, float relativeCenterY,
-        float relativeWidth, float relativeHeight) {
+        int width, int height) {
         this.captionBitmap = captionBitmap;
         this.degree = degree;
         this.relativeCenterX = relativeCenterX;
         this.relativeCenterY = relativeCenterY;
-        this.relativeWidth = relativeWidth;
-        this.relativeHeight = relativeHeight;
+        this.width = width;
+        this.height = height;
     }
 
     /**
@@ -44,8 +44,8 @@ public abstract class CaptionInfo {
         matrix.postRotate(-degree, centerX, centerY);
         float[] pst = new float[] {touchX, touchY};
         matrix.mapPoints(pst);
-        int halfWidth = (int) (relativeWidth * viewWidth / 2);
-        int halfHeight = (int) (relativeHeight * viewHeight / 2);
+        int halfWidth = (int) (width * 1.0f / 2);
+        int halfHeight = (int) (height * 1.0f / 2);
         int left = centerX - halfWidth;
         int right = centerX + halfWidth;
         int top = centerY - halfHeight;

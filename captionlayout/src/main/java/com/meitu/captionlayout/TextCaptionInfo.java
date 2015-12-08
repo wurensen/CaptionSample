@@ -11,26 +11,26 @@ import android.text.Layout;
 public class TextCaptionInfo extends CaptionInfo {
 
     public String text; // 字幕内容
-    public float relativeTextSize; // 字体大小比例，相对于控件宽度
+    public float textSize; // 字体大小
     public int textColor; // 字体颜色
     public int textBorderColor; // 边框颜色
     public Typeface textTypeface; // 字体
     public Layout.Alignment textAlignment; // 字体对齐方式
-    public float relativeTextPadding; // 内容与边框的间距比例，相对于控件宽度
+    public int textPadding; // 内容与边框的间距
 
     public TextCaptionInfo() {
     }
 
-    public TextCaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX,
-        float relativeCenterY, float relativeWidth, float relativeHeight, String text, float relativeTextSize,
-        int textColor, int textBorderColor, Typeface textTypeface, Layout.Alignment textAlignment, float relativeTextPadding) {
-        super(captionBitmap, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
+    public TextCaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX, float relativeCenterY, int width,
+        int height, String text, float textSize, int textColor, int textBorderColor, Typeface textTypeface,
+        Layout.Alignment textAlignment, int textPadding) {
+        super(captionBitmap, degree, relativeCenterX, relativeCenterY, width, height);
         this.text = text;
-        this.relativeTextSize = relativeTextSize;
+        this.textSize = textSize;
         this.textColor = textColor;
         this.textBorderColor = textBorderColor;
         this.textTypeface = textTypeface;
         this.textAlignment = textAlignment;
-        this.relativeTextPadding = relativeTextPadding;
+        this.textPadding = textPadding;
     }
 }

@@ -12,9 +12,9 @@ public class ImageCaptionInfo extends CaptionInfo {
     public ImageCaptionInfo() {
     }
 
-    public ImageCaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX,
-        float relativeCenterY, float relativeWidth, float relativeHeight, Bitmap intrinsicBitmap) {
-        super(captionBitmap, degree, relativeCenterX, relativeCenterY, relativeWidth, relativeHeight);
+    public ImageCaptionInfo(Bitmap captionBitmap, float degree, float relativeCenterX, float relativeCenterY,
+        int width, int height, Bitmap intrinsicBitmap) {
+        super(captionBitmap, degree, relativeCenterX, relativeCenterY, width, height);
         this.intrinsicBitmap = intrinsicBitmap;
     }
 
