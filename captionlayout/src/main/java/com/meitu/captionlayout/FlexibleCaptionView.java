@@ -111,6 +111,7 @@ public class FlexibleCaptionView extends View {
     private boolean mUpdateCurrent = true; // 是否基于当前的位置更新
     private boolean mIsImportCaption = false; // 是否为导入的字幕
     private CaptionInfo mCaptionInfo;
+    private float mFingerDegree; // 手指移动的角度，为了旋转时依附的效果并且跟手
 
     private Matrix mExportMatrix = new Matrix(); // 用于导出字幕的矩阵
 
@@ -1010,7 +1011,7 @@ public class FlexibleCaptionView extends View {
     private void loadImportCaptionInfo() {
         // 加载导入的字幕信息
         mTotalScale = 1f;
-        mTotalDegree = mCaptionInfo.degree;
+        mTotalDegree = mFingerDegree = mCaptionInfo.degree;
         if (mCaptionInfo instanceof TextCaptionInfo) {
             TextCaptionInfo textCaptionInfo = (TextCaptionInfo) mCaptionInfo;
             mTextBorderWidth = textCaptionInfo.width;
@@ -1592,8 +1593,6 @@ public class FlexibleCaptionView extends View {
         mUpdateMatrix.postRotate(degree, mCenterPoint.x, mCenterPoint.y);
         updateLocationDataAndRefresh();
     }
-
-    private float mFingerDegree = 0;
 
     private float adjustDegreeToSkipOffset(float degree) {
         /*

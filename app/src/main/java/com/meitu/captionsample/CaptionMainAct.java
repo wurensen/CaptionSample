@@ -55,7 +55,7 @@ public class CaptionMainAct extends Activity {
                 FlexibleCaptionView curFocusCaptionView) {
                 CharSequence lastText = lastFocusCaptionView != null ? lastFocusCaptionView.getText() : null;
                 CharSequence curText = curFocusCaptionView != null ? curFocusCaptionView.getText() : null;
-                Log.e("Flex", "onCaptionFocusChange...lastFocusCaptionView=" + lastText + ",curFocusCaptionView="
+                Log.w("Flex", "onCaptionFocusChange...lastFocusCaptionView=" + lastText + ",curFocusCaptionView="
                     + curText);
             }
         });
@@ -63,7 +63,7 @@ public class CaptionMainAct extends Activity {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (captionInfo != null) {
-                    Log.e(
+                    Log.w(
                         "flex",
                         "captionInfo.isTouchPointInCaption="
                             + captionInfo.isTouchPointInCaption(v.getWidth(), v.getHeight(), event.getX(),
@@ -80,13 +80,13 @@ public class CaptionMainAct extends Activity {
     private OnCaptionTranslateListener onCaptionTranslateListener = new OnCaptionTranslateListener() {
         @Override
         public void onStart(FlexibleCaptionView captionView) {
-            Log.e("flex", "onGestureStart");
+            Log.w("flex", "onGestureStart");
             linear_btn_container.setVisibility(View.GONE);
         }
 
         @Override
         public void onEnd(FlexibleCaptionView captionView) {
-            Log.e("flex", "onGestureEnd");
+            Log.w("flex", "onGestureEnd");
             linear_btn_container.setVisibility(View.VISIBLE);
         }
     };
@@ -94,13 +94,13 @@ public class CaptionMainAct extends Activity {
     private OnCaptionClickListener onCaptionClickListener = new OnCaptionClickListener() {
         @Override
         public void onInsideClick(FlexibleCaptionView captionView) {
-            Log.e("flex", "onInsideClick");
+            Log.w("flex", "onInsideClick");
             edit(captionView);
         }
 
         @Override
         public void onLeftTopClick(FlexibleCaptionView captionView) {
-            Log.e("flex", "onLeftTopClick");
+            Log.w("flex", "onLeftTopClick");
             captionLayoutContainer.removeCaptionView(captionView);
         }
 
