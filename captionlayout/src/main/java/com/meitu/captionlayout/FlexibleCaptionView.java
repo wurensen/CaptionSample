@@ -1307,9 +1307,10 @@ public class FlexibleCaptionView extends View {
                 }
                 mCancelClick = false;
 
-                if (!mBlockRotateScaleEvent) {
-                    adjustRotateIfNeed();
-                }
+                // 修改抬起时再修正旋转角度为在旋转时直接做吸附效果
+                // if (!mBlockRotateScaleEvent) {
+                // adjustRotateIfNeed();
+                // }
                 mTouchMode = TouchMode.NONE;
                 mStillDownPointId = 0;
                 if (mTranslateStart) {
@@ -1583,12 +1584,49 @@ public class FlexibleCaptionView extends View {
 
     private void processRotate(float degree) {
         degree = checkRotateBounds(degree);
+        degree = adjustDegreeToSkipOffset(degree);
         if (degree == 0) {
             return;
         }
         mTotalDegree = (mTotalDegree + degree) % 360;
         mUpdateMatrix.postRotate(degree, mCenterPoint.x, mCenterPoint.y);
         updateLocationDataAndRefresh();
+    }
+
+    private float mFingerDegree = 0;
+
+    private float adjustDegreeToSkipOffset(float degree) {
+        /*
+        * 当处于水平或竖直方向时，往范围外旋转累积达到范围外时，移动，否则保持不动
+        * 当处于范围外时，一到范围内的边界，立马旋转成水平或竖直方向
+        * 一个变量保持手指累积的旋转角度
+        * */
+
+        // 当前处于水平或竖直方向
+        mFingerDegree = (mFingerDegree + degree) % 360;
+        if (mTotalDegree % 90 == 0) {
+            for (int i = -270; i <= 360; i += 90) {
+                // 如果当前手指的累积的角度在范围外，移动
+                if (mTotalDegree == i) {
+                    if (mFingerDegree >= i - OFFSET_DEGREE && mFingerDegree <= i + OFFSET_DEGREE) {
+                        return 0;
+                    } else {
+                        // 一次性返回需要旋转的角度
+                        return mFingerDegree - i;
+                    }
+                }
+            }
+        }
+
+        // 检查是否进入水平或竖直区域
+        float afterTotalDegree = (mTotalDegree + degree) % 360;
+        for (int i = -270; i <= 360; i += 90) {
+            if (afterTotalDegree >= i - OFFSET_DEGREE && afterTotalDegree <= i + OFFSET_DEGREE) {
+                afterTotalDegree = i - mTotalDegree;
+                return afterTotalDegree;
+            }
+        }
+        return degree;
     }
 
     private float checkRotateBounds(float degree) {
