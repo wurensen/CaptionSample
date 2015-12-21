@@ -18,7 +18,6 @@ import android.text.Layout;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.util.AttributeSet;
-import android.util.FloatMath;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
@@ -1136,6 +1135,9 @@ public class FlexibleCaptionView extends View {
         float rectBottom = rectTop + mTextBorderHeight;
         mBorderRect.set(rectLeft, rectTop, rectRight, rectBottom);
 
+        // 设置最大放大倍数为宽度的1.2倍
+        mMaxScale = getWidth() * 1.2f / mBorderRect.width();
+
         determineTextStartPoint();
     }
 
@@ -1433,7 +1435,7 @@ public class FlexibleCaptionView extends View {
     private float calculatePointsDistance(MotionEvent event) {
         float x = event.getX(0) - event.getX(1);
         float y = event.getY(0) - event.getY(1);
-        return FloatMath.sqrt(x * x + y * y);
+        return (float) Math.sqrt(x * x + y * y);
     }
 
     private void scaleAndRotate(float curX, float curY) {
@@ -1542,25 +1544,40 @@ public class FlexibleCaptionView extends View {
     }
 
     private float[] checkMoveBounds(float dx, float dy) {
-        RectF currentBoundRect = getCurrentBoundRect();
-        if (dx < 0) {
-            if (currentBoundRect.left + dx < 0) {
-                dx = -currentBoundRect.left;
-            }
-        } else {
-            if (currentBoundRect.right + dx > getWidth()) {
-                dx = getWidth() - currentBoundRect.right;
-            }
-        }
+//        // 防止移除控件边界
+//        RectF currentBoundRect = getCurrentBoundRect();
+//        if (dx < 0) {
+//            if (currentBoundRect.left + dx < 0) {
+//                dx = -currentBoundRect.left;
+//            }
+//        } else {
+//            if (currentBoundRect.right + dx > getWidth()) {
+//                dx = getWidth() - currentBoundRect.right;
+//            }
+//        }
+//
+//        if (dy < 0) {
+//            if (currentBoundRect.top + dy < 0) {
+//                dy = -currentBoundRect.top;
+//            }
+//        } else {
+//            if (currentBoundRect.bottom + dy > getHeight()) {
+//                dy = getHeight() - currentBoundRect.bottom;
+//            }
+//        }
 
-        if (dy < 0) {
-            if (currentBoundRect.top + dy < 0) {
-                dy = -currentBoundRect.top;
-            }
-        } else {
-            if (currentBoundRect.bottom + dy > getHeight()) {
-                dy = getHeight() - currentBoundRect.bottom;
-            }
+        // 防止中点移除边界
+        float afterMoveX = mCenterPoint.x + dx;
+        if (afterMoveX < 0) {
+            dx = -mCenterPoint.x;
+        } else if (afterMoveX > getWidth()) {
+            dx = getWidth() - mCenterPoint.x;
+        }
+        float afterMoveY = mCenterPoint.y + dy;
+        if (afterMoveY < 0) {
+            dy = -mCenterPoint.y;
+        } else if (afterMoveY > getHeight()) {
+            dy = getHeight() - mCenterPoint.y;
         }
         return new float[] {dx, dy};
     }
@@ -1577,14 +1594,17 @@ public class FlexibleCaptionView extends View {
     }
 
     private float checkScaleBounds(float scale) {
-        if (scale > mMaxScale) {
-            scale = mMaxScale;
+        if (mTotalScale * scale > mMaxScale) {
+            scale = mMaxScale / mTotalScale;
         }
+//        if (scale > mMaxScale) {
+//            scale = mMaxScale;
+//        }
         return scale;
     }
 
     private void processRotate(float degree) {
-        degree = checkRotateBounds(degree);
+//        degree = checkRotateBounds(degree);
         degree = adjustDegreeToSkipOffset(degree);
         if (degree == 0) {
             return;
@@ -1629,6 +1649,7 @@ public class FlexibleCaptionView extends View {
     }
 
     private float checkRotateBounds(float degree) {
+        // 防止旋转的时候字幕超过控件
         RectF currentBoundRect = getCurrentBoundRect();
         if (currentBoundRect.left < 0 || currentBoundRect.top < -1 || currentBoundRect.right > getWidth()
             || currentBoundRect.bottom > getHeight()) {
@@ -1703,10 +1724,11 @@ public class FlexibleCaptionView extends View {
         mCenterPoint.x = (mLeftTopPoint.x + mRightBottomPoint.x) / 2;
         mCenterPoint.y = (mLeftTopPoint.y + mRightBottomPoint.y) / 2;
 
-        updateMaxScale();
+//        updateMaxScale();
     }
 
     private void updateMaxScale() {
+        // 限定缩放时不能超过边界
         RectF currentBoundRect = getCurrentBoundRect();
         float scaleLeft = mCenterPoint.x / (mCenterPoint.x - currentBoundRect.left);
         float scaleRight = (getWidth() - mCenterPoint.x) / (currentBoundRect.right - mCenterPoint.x);
