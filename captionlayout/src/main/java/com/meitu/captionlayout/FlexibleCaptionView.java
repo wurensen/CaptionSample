@@ -379,17 +379,17 @@ public class FlexibleCaptionView extends View {
         }
     }
 
-    public OnCaptionTranslateListener getOnCaptionGestureListener() {
+    public OnCaptionTranslateListener getOnCaptionTranslateListener() {
         return mOnCaptionTranslateListener;
     }
 
     /**
      * 设置字幕手势动作监听
      *
-     * @param onCaptionGestureListener
+     * @param listener
      */
-    public void setOnCaptionGestureListener(OnCaptionTranslateListener onCaptionGestureListener) {
-        this.mOnCaptionTranslateListener = onCaptionGestureListener;
+    public void setOnCaptionTranslateListener(OnCaptionTranslateListener listener) {
+        this.mOnCaptionTranslateListener = listener;
     }
 
     public OnCaptionClickListener getOnCaptionClickListener() {

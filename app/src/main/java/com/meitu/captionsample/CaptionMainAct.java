@@ -48,7 +48,7 @@ public class CaptionMainAct extends Activity {
 
     private void registerMonitor() {
         captionView1.setOnCaptionClickListener(onCaptionClickListener);
-        captionView1.setOnCaptionGestureListener(onCaptionTranslateListener);
+        captionView1.setOnCaptionTranslateListener(onCaptionTranslateListener);
         captionLayoutContainer.setOnCaptionFocusChangeListener(new CaptionLayout.OnCaptionFocusChangeListener() {
             @Override
             public void onCaptionFocusChange(CaptionLayout captionLayout, FlexibleCaptionView lastFocusCaptionView,
@@ -80,13 +80,13 @@ public class CaptionMainAct extends Activity {
     private OnCaptionTranslateListener onCaptionTranslateListener = new OnCaptionTranslateListener() {
         @Override
         public void onStart(FlexibleCaptionView captionView) {
-            Log.w("flex", "onGestureStart");
+            Log.w("flex", "onStart");
             linear_btn_container.setVisibility(View.GONE);
         }
 
         @Override
         public void onEnd(FlexibleCaptionView captionView) {
-            Log.w("flex", "onGestureEnd");
+            Log.w("flex", "onEnd");
             linear_btn_container.setVisibility(View.VISIBLE);
         }
     };
@@ -158,7 +158,7 @@ public class CaptionMainAct extends Activity {
                     android.R.drawable.ic_menu_crop)
                 .build();
         captionView.setOnCaptionClickListener(onCaptionClickListener);
-        captionView.setOnCaptionGestureListener(onCaptionTranslateListener);
+        captionView.setOnCaptionTranslateListener(onCaptionTranslateListener);
         // captionLayoutContainer.addView(captionView, new FrameLayout.LayoutParams(captionLayoutContainer.getWidth() /
         // 2,
         // captionLayoutContainer.getHeight() / 2));
