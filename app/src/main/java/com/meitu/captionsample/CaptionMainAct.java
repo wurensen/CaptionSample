@@ -66,8 +66,7 @@ public class CaptionMainAct extends Activity {
                     Log.w(
                         "flex",
                         "captionInfo.isTouchPointInCaption="
-                            + captionInfo.isTouchPointInCaption(v.getWidth(), v.getHeight(), event.getX(),
-                                event.getY()));
+                            + captionInfo.isTouchPointInCaption(v.getWidth(), v.getHeight(), event.getX(), event.getY()));
                     if (captionInfo.isTouchPointInCaption(v.getWidth(), v.getHeight(), event.getX(), event.getY())) {
                         importCaption(null);
                     }
@@ -213,7 +212,8 @@ public class CaptionMainAct extends Activity {
             FlexibleCaptionView.Builder.create(this)
                 .text(config.text)
                 .textSize(TypedValue.COMPLEX_UNIT_PX, config.textSize)
-                .textBorderWidth(config.textBorderWidth)
+                .maxTextSize(TypedValue.COMPLEX_UNIT_DIP, 60)
+                .layoutTextAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .textColor(config.textColor)
                 .textTypeface(typeface)
                 .icon(android.R.drawable.ic_delete, android.R.drawable.checkbox_on_background,

@@ -8,8 +8,6 @@
         <attr name="textSize" format="dimension"/>
         <!--字幕颜色-->
         <attr name="textColor" format="color"/>
-        <!--边框大小-->
-        <attr name="textBorderWidth" format="dimension"/>
         <!--文字距离边框的间隙-->
         <!--<attr name="textPadding" format="dimension"/>
         <attr name="textPaddingLeft" format="dimension"/>

@@ -8,7 +8,6 @@ import java.io.Serializable;
 public class CaptionConfig implements Serializable {
     public String text;
     public float textSize;
-    public int textBorderWidth;
     public int textColor;
     public int typefaceIndex;
     public int typefaceStyleIndex;
@@ -17,11 +16,10 @@ public class CaptionConfig implements Serializable {
     public int paddingTop;
     public int paddingBottom;
 
-    public CaptionConfig(String text, float textSize, int textBorderWidth, int textColor, int typefaceIndex,
-        int typefaceStyleIndex, int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
+    public CaptionConfig(String text, float textSize, int textColor, int typefaceIndex, int typefaceStyleIndex,
+        int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
         this.text = text;
         this.textSize = textSize;
-        this.textBorderWidth = textBorderWidth;
         this.textColor = textColor;
         this.typefaceIndex = typefaceIndex;
         this.typefaceStyleIndex = typefaceStyleIndex;
@@ -33,9 +31,9 @@ public class CaptionConfig implements Serializable {
 
     @Override
     public String toString() {
-        return "CaptionConfig{" + "text=" + text + ", textSize=" + textSize + ", textBorderWidth=" + textBorderWidth
-            + ", textColor=" + textColor + ", typefaceIndex=" + typefaceIndex + ", typefaceStyleIndex="
-            + typefaceStyleIndex + ", paddingLeft=" + paddingLeft + ", paddingRight=" + paddingRight + ", paddingTop="
-            + paddingTop + ", paddingBottom=" + paddingBottom + '}';
+        return "CaptionConfig{" + "text='" + text + '\'' + ", textSize=" + textSize + ", textColor=" + textColor
+            + ", typefaceIndex=" + typefaceIndex + ", typefaceStyleIndex=" + typefaceStyleIndex + ", paddingLeft="
+            + paddingLeft + ", paddingRight=" + paddingRight + ", paddingTop=" + paddingTop + ", paddingBottom="
+            + paddingBottom + '}';
     }
 }
