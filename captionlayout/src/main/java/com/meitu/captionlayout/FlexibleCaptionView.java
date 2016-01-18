@@ -85,8 +85,6 @@ public class FlexibleCaptionView extends View {
     private Typeface mTextTypeface = Typeface.DEFAULT;
     private int mPaddingLeft, mPaddingRight, mPaddingTop, mPaddingBottom;
     private Layout.Alignment mLayoutTextAlignment = Layout.Alignment.ALIGN_CENTER;
-    private PointF mInitTextStartPoint = new PointF();
-    private float[] mUpdateTextStartPoint = new float[2];
     private StaticLayout mTextLayout;
     private CharSequence mMaxWidthLineText;
 
@@ -367,7 +365,7 @@ public class FlexibleCaptionView extends View {
     /**
      * 设置字幕手势动作监听
      *
-     * @param listener
+     * @param listener 监听器
      */
     public void setOnCaptionTranslateListener(OnCaptionTranslateListener listener) {
         this.mOnCaptionTranslateListener = listener;
@@ -833,25 +831,14 @@ public class FlexibleCaptionView extends View {
         Bitmap textCaptionBitmap =
             Bitmap.createBitmap(targetRect.width(), targetRect.height(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(textCaptionBitmap);
-        float scalePaddingLeft = mPaddingLeft * mTotalScale * scale;
-        float scalePaddingTop = mPaddingTop * mTotalScale * scale;
-        float scalePaddingRight = mPaddingRight * mTotalScale * scale;
-        float dx = 0, dy = scalePaddingTop;
-        switch (mLayoutTextAlignment) {
-            case ALIGN_NORMAL:
-                dx = scalePaddingLeft;
-                break;
-            case ALIGN_OPPOSITE:
-                dx = -scalePaddingRight;
-                break;
-            default:
-                break;
-        }
-        canvas.translate(dx, dy);
         float textSize = mTextPaint.getTextSize();
         mTextPaint.setTextSize(textSize * scale);
         mTextLayout =
-            new StaticLayout(mText, mTextPaint, getStaticLayoutBreakWidth(scale), mLayoutTextAlignment, 1.0f, 0f, false);
+            new StaticLayout(mText, mTextPaint, getStaticLayoutBreakWidth(), mLayoutTextAlignment, 1.0f, 0f, false);
+        float dx = (targetRect.width() - mTextPaint.measureText(mMaxWidthLineText.toString())) / 2;
+        float dy = (targetRect.height() - mTextLayout.getHeight()) / 2;
+        // 移动画布原点到指定位置
+        canvas.translate(dx, dy);
         mTextLayout.draw(canvas);
         mTextPaint.setTextSize(textSize);
         // 构建导出对象
@@ -896,10 +883,10 @@ public class FlexibleCaptionView extends View {
      */
     private void refresh(boolean reset, boolean update) {
         if (!mResetData && reset) {
-            this.mResetData = reset;
+            this.mResetData = true;
         }
         if (!mUpdateBaseData && update) {
-            this.mUpdateBaseData = update;
+            this.mUpdateBaseData = true;
         }
         postInvalidate();
     }
@@ -919,7 +906,7 @@ public class FlexibleCaptionView extends View {
         }
         if (heightMode != MeasureSpec.EXACTLY) {
             // 未指定高度，与父控件一样大
-            measureHeight = measureWidth;
+            measureHeight = heightSize;
         }
         log("measureWidth=" + measureWidth + ",measureHeight=" + measureHeight);
         setMeasuredDimension(measureWidth, measureHeight);
@@ -1050,27 +1037,21 @@ public class FlexibleCaptionView extends View {
     }
 
     private void drawText(Canvas canvas) {
-        // 摆正
-        mUpdateMatrix.postRotate(-mTotalDegree, mCenterPoint.x, mCenterPoint.y);
-        // 更新摆正后要写字的起始点
-        mUpdateMatrix.mapPoints(mUpdateTextStartPoint, new float[] {mInitTextStartPoint.x, mInitTextStartPoint.y});
         canvas.save();
         // 旋转画布
         canvas.rotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
-        canvas.translate(mUpdateTextStartPoint[0], mUpdateTextStartPoint[1]);
-
         mTextLayout =
-            new StaticLayout(mText, mTextPaint, getStaticLayoutBreakWidth(1.0f), mLayoutTextAlignment, 1.0f, 0f, false);
+            new StaticLayout(mText, mTextPaint, getStaticLayoutBreakWidth(), mLayoutTextAlignment, 1.0f, 0f, false);
+        float dx = mCenterPoint.x - mTextPaint.measureText(mMaxWidthLineText.toString()) / 2;
+        float dy = mCenterPoint.y - mTextLayout.getHeight() / 2;
+        // 移动画布原点到指定位置
+        canvas.translate(dx, dy);
         mTextLayout.draw(canvas);
         canvas.restore();
-        // 恢复矩阵的改变
-        mUpdateMatrix.postRotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
     }
 
-    private int getStaticLayoutBreakWidth(float scale) {
-        // 根据当前边框宽度和最宽一行测量出宽度用来切割，防止不同字体导致的换行问题
-        return (int) Math.max(mBorderRect.width() * mTotalScale * scale,
-            mTextPaint.measureText(mMaxWidthLineText.toString()));
+    private int getStaticLayoutBreakWidth() {
+        return (int) Math.ceil(mTextPaint.measureText(mMaxWidthLineText.toString()));
     }
 
     private void drawBorderRect(Canvas canvas) {
@@ -1130,7 +1111,6 @@ public class FlexibleCaptionView extends View {
         float rectTop = mCenterPoint.y - mTextBorderHeight / 2f;
         float rectBottom = rectTop + mTextBorderHeight;
         mBorderRect.set(rectLeft, rectTop, rectRight, rectBottom);
-        determineTextStartPoint();
 
         resetUpdateMatrixExceptRotate();
     }
@@ -1170,20 +1150,6 @@ public class FlexibleCaptionView extends View {
         mUpdateMatrix.reset();
         mTotalScale = 1f;
         mUpdateMatrix.postRotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
-    }
-
-    private void determineTextStartPoint() {
-        switch (mLayoutTextAlignment) {
-            case ALIGN_NORMAL:
-                mInitTextStartPoint.set(mBorderRect.left + mPaddingLeft, mBorderRect.top + mPaddingTop);
-                break;
-            case ALIGN_OPPOSITE:
-                mInitTextStartPoint.set(mBorderRect.left - mPaddingRight, mBorderRect.top + mPaddingTop);
-                break;
-            default:
-                mInitTextStartPoint.set(mBorderRect.left, mBorderRect.top + mPaddingTop);
-                break;
-        }
     }
 
     private void updateLeftTopIconRect() {
@@ -1321,24 +1287,6 @@ public class FlexibleCaptionView extends View {
                 mOnCaptionClickListener.onLeftTopClick(this);
                 break;
         }
-    }
-
-    /**
-     * 如果角度与水平或竖直方向夹角为offsetDegree范围内，调整为水平或竖直方向
-     *
-     * @param mTotalDegree 当前角度
-     * @param offsetDegree 需要调整角度的范围
-     * @return 调整后的角度
-     */
-    private float adjustDegreeToHorizontalOrVertical(float mTotalDegree, float offsetDegree) {
-        float adjustedDegree = (mTotalDegree + 360) % 360;
-        for (int i = 0; i <= 360; i += 90) {
-            if (adjustedDegree >= i - offsetDegree && adjustedDegree <= i + offsetDegree) {
-                adjustedDegree = i;
-                break;
-            }
-        }
-        return adjustedDegree % 360;
     }
 
     // 是否要放弃处理事件
@@ -1596,26 +1544,6 @@ public class FlexibleCaptionView extends View {
             }
         }
         return degree;
-    }
-
-    private float getMax(float[] values) {
-        float maxValue = values[0];
-        for (int i = 1; i < values.length; i++) {
-            if (maxValue < values[i]) {
-                maxValue = values[i];
-            }
-        }
-        return maxValue;
-    }
-
-    private float getMin(float[] values) {
-        float minValue = values[0];
-        for (int i = 1; i < values.length; i++) {
-            if (values[i] < minValue) {
-                minValue = values[i];
-            }
-        }
-        return minValue;
     }
 
     // 字体相关参数改变
