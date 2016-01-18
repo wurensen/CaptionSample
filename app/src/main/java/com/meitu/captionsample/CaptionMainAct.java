@@ -212,7 +212,6 @@ public class CaptionMainAct extends Activity {
             FlexibleCaptionView.Builder.create(this)
                 .text(config.text)
                 .textSize(TypedValue.COMPLEX_UNIT_PX, config.textSize)
-                .maxTextSize(TypedValue.COMPLEX_UNIT_DIP, 60)
                 .layoutTextAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .textColor(config.textColor)
                 .textTypeface(typeface)

@@ -49,11 +49,9 @@ public class FlexibleCaptionView extends View {
      */
     private static final int DEFAULT_PADDING = 8;
     /**
-     * 默认支持的最大字体大小，单位像素
+     * 边框能达到的最大放大倍数，相对于控件的宽高
      */
-    private static final float DEFAULT_MAX_TEXT_SIZE = 250f;
-
-    private float mMaxTextSize = DEFAULT_MAX_TEXT_SIZE;
+    private static final float MAX_BORDER_SCALE = 1.5f;
 
     private boolean mDebug = false;
 
@@ -195,6 +193,8 @@ public class FlexibleCaptionView extends View {
 
         // 文字画笔
         mTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        // 防止字号太大不能正常渲染的问题
+        setLayerType(View.LAYER_TYPE_SOFTWARE, mTextPaint);
     }
 
     /**
@@ -205,7 +205,6 @@ public class FlexibleCaptionView extends View {
         private Context mContext;
         private CharSequence mText;
         private Float mTextSize;
-        private Float mMaxTextSize;
         private Integer mTextColor;
         private Integer mTextBorderColor;
         private Typeface mTextTypeface;
@@ -262,11 +261,6 @@ public class FlexibleCaptionView extends View {
 
         public Builder textSize(int unit, float value) {
             mTextSize = convert2px(mContext, unit, value);
-            return this;
-        }
-
-        public Builder maxTextSize(int unit, float value) {
-            mMaxTextSize = convert2px(mContext, unit, value);
             return this;
         }
 
@@ -336,7 +330,6 @@ public class FlexibleCaptionView extends View {
             FlexibleCaptionView view = new FlexibleCaptionView(mContext);
             view.mText = mText == null ? view.mText : mText;
             view.mTextSize = mTextSize == null ? view.mTextSize : mTextSize;
-            view.mMaxTextSize = mMaxTextSize == null ? view.mMaxTextSize : mMaxTextSize;
             view.mTextColor = mTextColor == null ? view.mTextColor : mTextColor;
             view.mBorderColor = mTextBorderColor == null ? view.mBorderColor : mTextBorderColor;
             view.mTextTypeface = mTextTypeface == null ? view.mTextTypeface : mTextTypeface;
@@ -517,7 +510,7 @@ public class FlexibleCaptionView extends View {
     }
 
     /**
-     * 设置当前字体大小，有最大限制{@link #mMaxTextSize}
+     * 设置当前字体大小
      *
      * @param unit  单位
      * @param value 值
@@ -531,31 +524,8 @@ public class FlexibleCaptionView extends View {
         if (this.mTextSize == textSize) {
             return;
         }
-        this.mTextSize = textSize > mMaxTextSize ? mMaxTextSize : textSize;
         mTextPaint.setTextSize(textSize);
         refresh(false, true);
-    }
-
-    /**
-     * 设置最大字号限制
-     * @param unit 单位
-     * @param value 值
-     */
-    public void setMaxTextSize(int unit, float value) {
-        if (value <= 0) {
-            log("mTextSize must be > 0");
-            return;
-        }
-        float textSize = convert2px(getContext(), unit, value);
-        if (this.mMaxTextSize == textSize) {
-            return;
-        }
-        this.mMaxTextSize = textSize;
-        // 如果当前字号大于最大字号，缩小当前字号为最大字号
-        if (this.mTextSize > mMaxTextSize) {
-            this.mTextSize = mMaxTextSize;
-            setTextSize(unit, value);
-        }
     }
 
     /*
@@ -1026,9 +996,6 @@ public class FlexibleCaptionView extends View {
             mIsImgCaption = mBlockRotateScaleEvent = true;
         } else {
             mIsImgCaption = mBlockRotateScaleEvent = false;
-            if (mTextSize > mMaxTextSize) {
-                mTextSize = mMaxTextSize;
-            }
             mTextPaint.setTextSize(mTextSize);
             mTextPaint.setColor(mTextColor);
             mTextPaint.setTypeface(mTextTypeface);
@@ -1136,6 +1103,9 @@ public class FlexibleCaptionView extends View {
             mTextBorderWidth = mImgCaptionBitmap.getWidth();
             mTextBorderHeight = mImgCaptionBitmap.getHeight();
         } else {
+            float availableTextWidth = (getWidth() - mPaddingLeft - mPaddingRight) * MAX_BORDER_SCALE;
+            float availableTextHeight = (getHeight() - mPaddingTop - mPaddingBottom) * MAX_BORDER_SCALE;
+            adjustTextSizeToFitMaxBorder(availableTextWidth, availableTextHeight);
             mTextLayout =
                 new StaticLayout(mText, mTextPaint, Integer.MAX_VALUE, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0f, false);
             // 确定边框宽高
@@ -1154,10 +1124,6 @@ public class FlexibleCaptionView extends View {
         }
         log("mTextBorderWidth=" + mTextBorderWidth + ",mTextBorderHeight=" + mTextBorderHeight);
 
-        // float rectLeft = (getWidth() - mTextBorderWidth) / 2;
-        // float rectRight = rectLeft + mTextBorderWidth;
-        // float rectTop = (getHeight() - mTextBorderHeight) / 2;
-        // float rectBottom = rectTop + mTextBorderHeight;
         // 根据中心点获取边框位置
         float rectLeft = mCenterPoint.x - mTextBorderWidth / 2f;
         float rectRight = rectLeft + mTextBorderWidth;
@@ -1167,6 +1133,36 @@ public class FlexibleCaptionView extends View {
         determineTextStartPoint();
 
         resetUpdateMatrixExceptRotate();
+    }
+
+    private void adjustTextSizeToFitMaxBorder(float availableTextWidth, float availableTextHeight) {
+        if (availableTextWidth == 0 || availableTextHeight == 0) {
+            return;
+        }
+        while (true) {
+            mTextLayout = new StaticLayout(mText, mTextPaint, Integer.MAX_VALUE, mLayoutTextAlignment, 1.0f, 0f, false);
+            // 获取需要缩小倍数
+            float resizeScale = getResizeScale(mTextLayout, availableTextWidth, availableTextHeight);
+            if (resizeScale < 1) {
+                mTextPaint.setTextSize(mTextPaint.getTextSize() * resizeScale);
+            } else {
+                break;
+            }
+        }
+        log("mTextPaint.getTextSize()=" + mTextPaint.getTextSize());
+    }
+
+    private float getResizeScale(StaticLayout mTextLayout, float availableTextWidth, float availableTextHeight) {
+        float maxWidth = mTextLayout.getLineWidth(0);
+        for (int i = 1; i < mTextLayout.getLineCount(); i++) {
+            float lineWidth = mTextLayout.getLineWidth(i);
+            if (lineWidth > maxWidth) {
+                maxWidth = lineWidth;
+            }
+        }
+        float widthScale = availableTextWidth / maxWidth;
+        float heightScale = availableTextHeight / mTextLayout.getHeight();
+        return Math.min(widthScale, heightScale);
     }
 
     // 重置矩阵，只保留旋转变换
@@ -1547,8 +1543,13 @@ public class FlexibleCaptionView extends View {
     }
 
     private float checkScaleBounds(float scale) {
-        if (mTextSize * scale > mMaxTextSize) {
-            scale = mMaxTextSize / mTextSize;
+        // 边框宽度不能大于控件宽度的设置倍数
+        if (mBorderRect.width() * mTotalScale * scale > getWidth() * MAX_BORDER_SCALE) {
+            return getWidth() * MAX_BORDER_SCALE / (mBorderRect.width() * mTotalScale);
+        }
+        // 边框高度不能大于控件高度的设置倍数
+        if (mBorderRect.height() * mTotalScale * scale > getHeight() * MAX_BORDER_SCALE) {
+            return getHeight() * MAX_BORDER_SCALE / (mBorderRect.height() * mTotalScale);
         }
         return scale;
     }
