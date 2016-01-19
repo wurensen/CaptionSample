@@ -187,12 +187,12 @@ public class FlexibleCaptionView extends View {
 
         // 图标画笔
         mBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mBitmapPaint.setDither(true);
+//        mBitmapPaint.setDither(true);
 
         // 文字画笔
         mTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-        // 防止字号太大不能正常渲染的问题
-        setLayerType(View.LAYER_TYPE_SOFTWARE, mTextPaint);
+        // 防止字号太大不能正常渲染的问题，关闭硬件加速emoji表情绘制无法跟随旋转
+//        setLayerType(View.LAYER_TYPE_SOFTWARE, mTextPaint);
     }
 
     /**
@@ -1042,10 +1042,14 @@ public class FlexibleCaptionView extends View {
         canvas.rotate(mTotalDegree, mCenterPoint.x, mCenterPoint.y);
         mTextLayout =
             new StaticLayout(mText, mTextPaint, getStaticLayoutBreakWidth(), mLayoutTextAlignment, 1.0f, 0f, false);
-        float dx = mCenterPoint.x - mTextPaint.measureText(mMaxWidthLineText.toString()) / 2;
-        float dy = mCenterPoint.y - mTextLayout.getHeight() / 2;
+        float rectWidth = mTextPaint.measureText(mMaxWidthLineText.toString());
+        float rectHeight = mTextLayout.getHeight();
+        float dx = mCenterPoint.x - rectWidth / 2;
+        float dy = mCenterPoint.y - rectHeight / 2;
         // 移动画布原点到指定位置
         canvas.translate(dx, dy);
+        // 裁剪画布，减少绘制区域
+        canvas.clipRect(0, 0, rectWidth, rectHeight);
         mTextLayout.draw(canvas);
         canvas.restore();
     }
