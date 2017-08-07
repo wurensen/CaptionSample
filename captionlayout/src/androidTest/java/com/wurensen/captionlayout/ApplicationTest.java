@@ -1,4 +1,4 @@
-package com.meitu.captionsample;
+package com.wurensen.captionlayout;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

@@ -1,148 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
         <EditText
             android:id="@+id/edit_caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_margin="5dp"
+            android:layout_weight="1"
             android:background="#eee"
-            android:maxLines="5"
-            android:paddingLeft="5dp"
-            android:paddingTop="10dp"
-            android:paddingRight="15dp"
-            android:paddingBottom="20dp"
-            android:typeface="normal"
-            android:minWidth="20dp"
-            android:textSize="18dp"/>
+            android:textAlignment="center"
+            android:hint="点击输入文字"
+            android:padding="5dp"
+            android:typeface="normal"/>
 
-        <TextView
-            android:layout_width="wrap_content"
+        <FrameLayout
+            android:id="@+id/frame_preview"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="文字颜色"/>
-
-        <RadioGroup
-            android:id="@+id/rdo_group_color"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/rdo_btn_color_black"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="BLACK"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_color_red"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="RED"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_color_blue"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="BLUE"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_color_yellow"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="YELLOW"/>
-        </RadioGroup>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="字体类型"/>
-
-        <RadioGroup
-            android:id="@+id/rdo_group_typeface"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/rdo_btn_typeface_normal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="NORMAL"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_typeface_sans"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="SANS_SERIF"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_typeface_serif"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="SERIF"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_typeface_monospace"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="MONOSPACE"/>
-        </RadioGroup>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="字体风格"/>
-
-        <RadioGroup
-            android:id="@+id/rdo_group_style"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/rdo_btn_style_normal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="NORMAL"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_style_bold"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="BOLD"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_style_italic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ITALIC"/>
-
-            <RadioButton
-                android:id="@+id/rdo_btn_style_bold_italic"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="BOLD_ITALIC"/>
-        </RadioGroup>
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="finish"
-            android:text="完成"/>
+            android:layout_weight="1"
+            android:background="#eee"
+            android:visibility="gone"/>
 
     </LinearLayout>
-</ScrollView>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="文字颜色"/>
+
+    <RadioGroup
+        android:id="@+id/rdo_group_color"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rdo_btn_color_black"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="BLACK"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_color_red"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="RED"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_color_blue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BLUE"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_color_yellow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YELLOW"/>
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="字体类型"/>
+
+    <RadioGroup
+        android:id="@+id/rdo_group_typeface"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rdo_btn_typeface_normal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="NORMAL"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_typeface_sans"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SANS_SERIF"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_typeface_serif"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SERIF"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_typeface_monospace"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MONOSPACE"/>
+    </RadioGroup>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="字体风格"/>
+
+    <RadioGroup
+        android:id="@+id/rdo_group_style"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/rdo_btn_style_normal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="NORMAL"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_style_bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BOLD"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_style_italic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ITALIC"/>
+
+        <RadioButton
+            android:id="@+id/rdo_btn_style_bold_italic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BOLD_ITALIC"/>
+    </RadioGroup>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="finish"
+        android:text="完成"/>
+
+</LinearLayout>

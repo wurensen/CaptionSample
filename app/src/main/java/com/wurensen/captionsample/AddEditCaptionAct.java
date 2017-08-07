@@ -1,14 +1,20 @@
-package com.meitu.captionsample;
+package com.wurensen.captionsample;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.RadioGroup;
+
+import com.wurensen.captionlayout.FlexibleCaptionView;
 
 /**
  * 新增编辑字幕
@@ -23,6 +29,7 @@ public class AddEditCaptionAct extends Activity {
 
     public static EditText ediTxtCaption;
     private RadioGroup rdoGroupColor, rdoGroupTypeFace, rdoGroupStyle;
+    private FrameLayout framePreview;
 
     boolean isAdd;
     float textSize;
@@ -46,6 +53,7 @@ public class AddEditCaptionAct extends Activity {
             ediTxtCaption.setText(caption);
             ediTxtCaption.setSelection(caption.length());
         }
+
     }
 
     private void initView() {
@@ -53,12 +61,58 @@ public class AddEditCaptionAct extends Activity {
         rdoGroupColor = getView(R.id.rdo_group_color);
         rdoGroupTypeFace = getView(R.id.rdo_group_typeface);
         rdoGroupStyle = getView(R.id.rdo_group_style);
+        framePreview = getView(R.id.frame_preview);
+        addCaptionPreviewView();
+    }
+
+    private FlexibleCaptionView captionPreview;
+
+    private void addCaptionPreviewView() {
+        String text = ediTxtCaption.getText().toString();
+        if (TextUtils.isEmpty(text)) {
+            text = ediTxtCaption.getHint().toString();
+        }
+        Typeface typeface =
+            Typeface.create(AddEditCaptionAct.typefaces[typefaceIndex],
+                AddEditCaptionAct.typefaceStyles[typefaceStyleIndex]);
+        // 没有设置边框宽度textBorderWidth，默认为根据文字的宽度和padding来确定，但最大不会超过（字幕宽度-默认间距）；
+        captionPreview =
+            FlexibleCaptionView.Builder.create(this)
+                .text(text)
+                .textSize(TypedValue.COMPLEX_UNIT_PX, ediTxtCaption.getTextSize())
+                .textColor(ediTxtCaption.getCurrentTextColor())
+                .textBorderColor(Color.BLACK)
+                .textTypeface(typeface)
+                .build();
+        // 屏蔽事件
+        captionPreview.setEnable(false);
+        // captionPreview.setText(text);
+        framePreview.addView(captionPreview);
     }
 
     private void registerMonitor() {
         rdoGroupColor.setOnCheckedChangeListener(checkedChangeListener);
         rdoGroupTypeFace.setOnCheckedChangeListener(checkedChangeListener);
         rdoGroupStyle.setOnCheckedChangeListener(checkedChangeListener);
+        ediTxtCaption.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String text = s.toString();
+                if (s.length() == 0) {
+                    text = ediTxtCaption.getHint().toString();
+                }
+                captionPreview.setText(text);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
     }
 
     private RadioGroup.OnCheckedChangeListener checkedChangeListener = new RadioGroup.OnCheckedChangeListener() {
@@ -94,6 +148,7 @@ public class AddEditCaptionAct extends Activity {
                 break;
         }
         ediTxtCaption.setTextColor(textColor);
+        captionPreview.setTextColor(textColor);
     }
 
     public void setCheckedTypeFace(int checkedId) {
@@ -112,6 +167,7 @@ public class AddEditCaptionAct extends Activity {
                 break;
         }
         ediTxtCaption.setTypeface(typefaces[typefaceIndex], typefaceStyles[typefaceStyleIndex]);
+        captionPreview.setTextTypeface(ediTxtCaption.getTypeface());
     }
 
     public void setCheckedTypeFaceStyle(int checkedId) {
@@ -130,6 +186,7 @@ public class AddEditCaptionAct extends Activity {
                 break;
         }
         ediTxtCaption.setTypeface(typefaces[typefaceIndex], typefaceStyles[typefaceStyleIndex]);
+        captionPreview.setTextTypeface(ediTxtCaption.getTypeface());
     }
 
     public void finish(View view) {
@@ -138,14 +195,13 @@ public class AddEditCaptionAct extends Activity {
             textSize = ediTxtCaption.getTextSize();
             Intent data = new Intent();
             data.putExtra("isAdd", isAdd);
-            int textBorderWidth = ediTxtCaption.getWidth();
             int textColor = ediTxtCaption.getCurrentTextColor();
             int paddingLeft = ediTxtCaption.getPaddingLeft();
             int paddingRight = ediTxtCaption.getPaddingRight();
             int paddingTop = ediTxtCaption.getPaddingTop();
             int paddingBottom = ediTxtCaption.getPaddingBottom();
-            data.putExtra(CaptionConfig.class.getSimpleName(), new CaptionConfig(caption, textSize, textBorderWidth,
-                textColor, typefaceIndex, typefaceStyleIndex, paddingLeft, paddingRight, paddingTop, paddingBottom));
+            data.putExtra(CaptionConfig.class.getSimpleName(), new CaptionConfig(caption, textSize, textColor,
+                typefaceIndex, typefaceStyleIndex, paddingLeft, paddingRight, paddingTop, paddingBottom));
             setResult(RESULT_OK, data);
             finish();
         }
