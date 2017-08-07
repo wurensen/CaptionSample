@@ -1,4 +1,4 @@
-package com.meitu.captionsample;
+package com.wurensen.captionsample;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -14,11 +14,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.meitu.captionlayout.CaptionInfo;
-import com.meitu.captionlayout.CaptionLayout;
-import com.meitu.captionlayout.FlexibleCaptionView;
-import com.meitu.captionlayout.FlexibleCaptionView.OnCaptionClickListener;
-import com.meitu.captionlayout.FlexibleCaptionView.OnCaptionTranslateListener;
+import com.wurensen.captionlayout.CaptionInfo;
+import com.wurensen.captionlayout.CaptionLayout;
+import com.wurensen.captionlayout.FlexibleCaptionView;
+import com.wurensen.captionlayout.FlexibleCaptionView.OnCaptionClickListener;
+import com.wurensen.captionlayout.FlexibleCaptionView.OnCaptionTranslateListener;
 
 public class CaptionMainAct extends Activity {
 

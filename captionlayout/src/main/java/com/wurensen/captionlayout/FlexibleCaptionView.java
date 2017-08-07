@@ -1,4 +1,4 @@
-package com.meitu.captionlayout;
+package com.wurensen.captionlayout;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -190,6 +190,7 @@ public class FlexibleCaptionView extends View {
         // 边框画笔
         mBorderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mBorderPaint.setStyle(Paint.Style.STROKE);
+        mBorderPaint.setStrokeWidth(6);
 
         // 图标画笔
         mBitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);

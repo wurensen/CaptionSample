@@ -1,4 +1,4 @@
-package com.meitu.captionsample;
+package com.wurensen.captionsample;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -14,7 +14,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.RadioGroup;
 
-import com.meitu.captionlayout.FlexibleCaptionView;
+import com.wurensen.captionlayout.FlexibleCaptionView;
 
 /**
  * 新增编辑字幕

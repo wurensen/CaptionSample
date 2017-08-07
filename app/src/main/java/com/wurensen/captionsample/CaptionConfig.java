@@ -1,4 +1,4 @@
-package com.meitu.captionsample;
+package com.wurensen.captionsample;
 
 import java.io.Serializable;
 

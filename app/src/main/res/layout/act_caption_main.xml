@@ -7,13 +7,13 @@
                 tools:context=".CaptionMainAct">
 
 
-    <com.meitu.captionlayout.CaptionLayout
+    <com.wurensen.captionlayout.CaptionLayout
         android:id="@+id/captionLayout_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#e4efef">
 
-        <com.meitu.captionlayout.FlexibleCaptionView
+        <com.wurensen.captionlayout.FlexibleCaptionView
             android:id="@+id/captionView1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -25,7 +25,7 @@
             app:textColor="#00aaff"
             app:textSize="30dp"/>
 
-    </com.meitu.captionlayout.CaptionLayout>
+    </com.wurensen.captionlayout.CaptionLayout>
 
 
     <LinearLayout

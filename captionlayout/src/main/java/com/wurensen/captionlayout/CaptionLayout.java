@@ -1,4 +1,4 @@
-package com.meitu.captionlayout;
+package com.wurensen.captionlayout;
 
 import java.util.ArrayList;
 
